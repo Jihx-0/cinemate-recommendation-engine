@@ -26,7 +26,7 @@ CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
 tmdb_client = TMDBClient()
 
 # Init user system
-user_system = UserSystem()
+user_system = UserSystem("../cinemate.db")
 
 # Global var to store movies
 movies_df = None

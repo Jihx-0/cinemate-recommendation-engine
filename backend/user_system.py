@@ -9,7 +9,7 @@ import secrets
 import string
 
 class UserSystem:
-    def __init__(self, db_path: str = "noodlepicks.db"):
+    def __init__(self, db_path: str = "cinemate.db"):
         self.db_path = db_path
         self._init_database()
     
