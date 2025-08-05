@@ -111,44 +111,37 @@ Cinemate/
 │   ├── user_system.py      # User management & ML algorithms
 │   ├── tmdb_client.py      # TMDb API integration
 │   └── requirements.txt
-├── .env                    # Environment variables
-└── README.md
+├── .env                     # Environment variables
+├── .gitignore              # Git ignore rules
+├── package.json            # Root package.json with scripts
+└── README.md               # This file
 ```
 
-## 🎯 How It Works
+## 🎯 Features
 
-### 1. User Registration & Rating
-- Create an account and start rating movies
-- Rate movies you've watched (1-5 stars)
-- The system learns your preferences from your ratings
+### User Authentication
+- **Registration**: Create account with email validation
+- **Login/Logout**: Secure session management
+- **Password Security**: Strong password requirements and validation
+- **Profile Management**: View and manage your account
 
-### 2. Content Analysis
-- **TF-IDF Processing**: Movie content (title, overview, genre) is converted to vectors
-- **Similarity Calculation**: Cosine similarity finds movies with similar content
-- **Profile Building**: Your liked movies create a content preference profile
+### Movie Rating System
+- **Rate Movies**: Rate movies on a 1-5 star scale
+- **Rating History**: View all your past ratings
+- **Remove Ratings**: Delete ratings you no longer want
+- **Auto-save**: Ratings are saved automatically
 
-### 3. Collaborative Analysis
-- **User Similarity**: Finds users with similar rating patterns
-- **Pattern Recognition**: Identifies what similar users enjoyed
-- **Rating Prediction**: Predicts your likely ratings for unseen movies
+### Recommendation Engine
+- **Personalized Suggestions**: Get recommendations based on your taste
+- **Hybrid Algorithm**: Combines content-based and collaborative filtering
+- **Real-time Updates**: Recommendations update as you rate more movies
+- **Multiple Sources**: Uses both movie content and user behavior
 
-### 4. Hybrid Recommendations
-- **Algorithm Combination**: Merges content-based and collaborative results
-- **Smart Weighting**: Balances both approaches based on data availability
-- **Personalized Results**: Delivers unique recommendations for each user
-
-## 🔧 Configuration
-
-### Environment Variables
-- `TMDB_API_KEY`: Your TMDb API key for movie data
-- `FLASK_SECRET_KEY`: Secret key for Flask sessions
-- `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:5001)
-
-### ML Algorithm Parameters
-- **TF-IDF**: 1000 max features, English stop words
-- **Cosine Similarity**: Standard cosine distance metric
-- **User Similarity**: Top 5 most similar users
-- **Rating Thresholds**: Minimum 3 stars for content-based, 2 stars for collaborative
+### User Interface
+- **Responsive Design**: Works on desktop, tablet, and mobile
+- **Dark/Light Theme**: Toggle between themes
+- **Smooth Animations**: Framer Motion powered transitions
+- **Modern UI**: Clean, professional interface
 
 ## ⚠️ Limitations
 
@@ -158,21 +151,38 @@ Cinemate/
 
 - **Cold Start Problem**: New users with few ratings may receive less accurate recommendations until they rate more movies, as the system needs sufficient data to build reliable user profiles.
 
-- **Genre Coverage**: Recommendations are limited to movies available in the TMDb dataset, which may not include all genres or niche films.
+- **Genre Coverage**: Limited by TMDb dataset availability and movie metadata quality.
 
-- **Real-time Updates**: Movie data is cached locally and requires manual refresh to include new releases from TMDb.
+- **Real-time Updates**: Movie data is cached and requires manual refresh to get new releases.
 
-## 📝 License
+## 🚀 Deployment
+
+### Local Development
+```bash
+npm run dev
+```
+
+### Production Deployment
+1. Set up environment variables for production
+2. Build the frontend: `npm run build`
+3. Deploy backend to your preferred hosting service
+4. Configure CORS settings for your domain
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Test thoroughly
+5. Submit a pull request
+
+## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## 🙏 Sources
 
-- [TMDb](https://www.themoviedb.org/)
-- [Scikit-learn](https://scikit-learn.org/)
-- [Next.js](https://nextjs.org/)
-- [Flask](https://flask.palletsprojects.com/)
-
----
-
-Built by BinaryNoodle
+- **TMDb API**: Movie data and metadata
+- **Scikit-learn**: Machine learning algorithms
+- **React & Next.js**: Frontend framework
+- **Flask**: Backend framework
