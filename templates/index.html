@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}Lumora - Discover Your Next Favorite Movie{% endblock %}
+
+{% block content %}
+<div class="hero-section">
+    <div class="hero-content">
+        <div class="hero-text">
+            <h1 class="hero-title">
+                Discover Your Next
+                <span class="highlight">Favorite Movie</span>
+            </h1>
+            <p class="hero-description">
+                Our AI-powered recommendation engine uses advanced machine learning to suggest 
+                movies tailored to your taste. Rate a few movies and let our algorithm find 
+                hidden gems you'll love.
+            </p>
+            <div class="hero-features">
+                <div class="feature">
+                    <i class="fas fa-brain"></i>
+                    <span>AI-Powered</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Content-Based Filtering</span>
+                </div>
+                <div class="feature">
+                    <i class="fas fa-users"></i>
+                    <span>Personalized</span>
+                </div>
+            </div>
+            <div class="hero-actions">
+                <a href="{{ url_for('rate_movies') }}" class="btn btn-primary">
+                    <i class="fas fa-star"></i>
+                    Get Started
+                </a>
+                <a href="{{ url_for('recommendations') }}" class="btn btn-secondary">
+                    <i class="fas fa-lightbulb"></i>
+                    View Recommendations
+                </a>
+            </div>
+        </div>
+        <div class="hero-visual">
+            <div class="movie-cards">
+                {% for movie in popular_movies[:3] %}
+                <div class="movie-card card-{{ loop.index }}">
+                    {% if movie.poster_url %}
+                    <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="card-poster">
+                    {% else %}
+                    <div class="card-poster-placeholder">
+                        <i class="fas fa-film"></i>
+                    </div>
+                    {% endif %}
+                    <div class="card-title">{{ movie.title }}</div>
+                    <div class="card-rating">
+                        <i class="fas fa-star"></i>
+                        <span>{{ "%.1f"|format(movie.vote_average) }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="popular-movies">
+    <div class="container">
+        <h2 class="section-title">Popular Movies</h2>
+        <div class="movies-grid">
+            {% for movie in popular_movies[:12] %}
+            <div class="movie-item">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster">
+                {% else %}
+                <div class="movie-poster-placeholder">
+                    <i class="fas fa-film"></i>
+                </div>
+                {% endif %}
+                <div class="movie-info">
+                    <h3 class="movie-title">{{ movie.title }}</h3>
+                    <div class="movie-meta">
+                        <span class="movie-rating">
+                            <i class="fas fa-star"></i>
+                            {{ "%.1f"|format(movie.vote_average) }}
+                        </span>
+                        {% if movie.release_date %}
+                        <span class="movie-year">{{ movie.release_date[:4] }}</span>
+                        {% endif %}
+                    </div>
+                    {% if movie.genre %}
+                    <p class="movie-genre">{{ movie.genre }}</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<section class="how-it-works">
+    <div class="container">
+        <h2 class="section-title">How It Works</h2>
+        <div class="steps">
+            <div class="step">
+                <div class="step-number">1</div>
+                <div class="step-icon">
+                    <i class="fas fa-star"></i>
+                </div>
+                <h3>Rate Movies</h3>
+                <p>Rate 10 movies from our curated selection to help us understand your taste.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">2</div>
+                <div class="step-icon">
+                    <i class="fas fa-brain"></i>
+                </div>
+                <h3>AI Analysis</h3>
+                <p>Our machine learning algorithm analyzes your preferences using content-based filtering.</p>
+            </div>
+            <div class="step">
+                <div class="step-number">3</div>
+                <div class="step-icon">
+                    <i class="fas fa-lightbulb"></i>
+                </div>
+                <h3>Get Recommendations</h3>
+                <p>Receive personalized movie recommendations based on your ratings and preferences.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="features">
+    <div class="container">
+        <h2 class="section-title">Why Choose Lumora?</h2>
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-robot"></i>
+                </div>
+                <h3>Advanced AI</h3>
+                <p>Powered by scikit-learn and TF-IDF vectorization for accurate recommendations.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-database"></i>
+                </div>
+                <h3>Rich Database</h3>
+                <p>Access to a comprehensive database of movies with detailed metadata and descriptions.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-mobile-alt"></i>
+                </div>
+                <h3>Responsive Design</h3>
+                <p>Beautiful, modern interface that works perfectly on desktop, tablet, and mobile devices.</p>
+            </div>
+            <div class="feature-card">
+                <div class="feature-icon">
+                    <i class="fas fa-bolt"></i>
+                </div>
+                <h3>Fast & Efficient</h3>
+                <p>Lightning-fast recommendations using optimized algorithms and efficient data processing.</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %} 

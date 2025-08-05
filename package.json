@@ -1,0 +1,28 @@
+{
+  "name": "lumora",
+  "version": "1.0.0",
+  "description": "AI-Powered Movie Recommendation Engine",
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:backend": "cd backend && python app.py",
+    "dev:frontend": "cd frontend && npm run dev",
+    "build": "cd frontend && npm run build",
+    "start": "cd frontend && npm start",
+    "install:all": "npm install && cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "keywords": [
+    "movie",
+    "recommendations",
+    "ai",
+    "machine-learning",
+    "react",
+    "nextjs",
+    "python",
+    "flask"
+  ],
+  "author": "Lumora Team",
+  "license": "MIT"
+} 

@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Profile - {{ user.username }} - Lumora{% endblock %}
+
+{% block content %}
+<div class="profile-section">
+    <div class="container">
+        <div class="profile-header">
+            <div class="user-avatar-large">
+                {{ user.username[0].upper() }}
+            </div>
+            <div>
+                <h1 class="profile-name">{{ user.username }}</h1>
+                <p class="profile-email">{{ user.email }}</p>
+                <p class="profile-joined">Member since {{ user.created_at.strftime('%B %Y') }}</p>
+            </div>
+        </div>
+        
+        <div class="user-profile">
+            <h2>Your Statistics</h2>
+            <div class="user-stats">
+                <div class="stat-item">
+                    <div class="stat-number">{{ stats.movies_rated }}</div>
+                    <div class="stat-label">Movies Rated</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ "%.1f"|format(stats.average_rating) }}</div>
+                    <div class="stat-label">Average Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-number">{{ stats.favorite_movies }}</div>
+                    <div class="stat-label">Favorites (4-5 stars)</div>
+                </div>
+            </div>
+        </div>
+        
+        {% if rated_movies %}
+        <div class="ratings-history">
+            <h2>Your Rating History</h2>
+            {% for movie in rated_movies %}
+            <div class="rating-history-card">
+                {% if movie.poster_url %}
+                <img src="{{ movie.poster_url }}" alt="{{ movie.title }}" class="movie-poster-small poster-image-small">
+                {% else %}
+                <div class="movie-poster-small">
+                    <i class="fas fa-film"></i>
+                </div>
+                {% endif %}
+                <div class="movie-info-small">
+                    <h3 class="movie-title-small">{{ movie.title }}</h3>
+                    <div class="movie-meta-small">
+                        {% if movie.genre %}
+                        <span class="movie-genre-small">{{ movie.genre }}</span>
+                        {% endif %}
+                        {% if movie.vote_average %}
+                        <span class="movie-rating-small">
+                            <i class="fas fa-star"></i>
+                            {{ "%.1f"|format(movie.vote_average) }}
+                        </span>
+                        {% endif %}
+                    </div>
+                    <div class="user-rating-display">
+                        <span class="rating-label-small">Your Rating:</span>
+                        <div class="rating-stars-small">
+                            {% for i in range(1, 6) %}
+                            <span class="{% if i <= movie.user_rating %}filled{% endif %}">★</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        
+        <div class="profile-actions">
+            <a href="{{ url_for('rate_movies') }}" class="btn btn-primary">
+                <i class="fas fa-star"></i>
+                Rate More Movies
+            </a>
+            <a href="{{ url_for('recommendations') }}" class="btn btn-outline">
+                <i class="fas fa-lightbulb"></i>
+                View Recommendations
+            </a>
+            <a href="{{ url_for('home') }}" class="btn btn-outline">
+                <i class="fas fa-home"></i>
+                Back to Home
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %} 
