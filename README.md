@@ -139,7 +139,7 @@ Cinemate/
 
 ### User Interface
 - **Responsive Design**: Works on desktop, tablet, and mobile
-- **Dark/Light Theme**: Toggle between themes
+- **Theme Picker**: Toggle between themes
 - **Smooth Animations**: Framer Motion powered transitions
 - **Modern UI**: Clean, professional interface
 
@@ -154,6 +154,8 @@ Cinemate/
 - **Genre Coverage**: Limited by TMDb dataset availability and movie metadata quality.
 
 - **Real-time Updates**: Movie data is cached and requires manual refresh to get new releases.
+
+- **Password Reset Functionality** - Email password reset was intentionally left out in lieu of a local way to reset for demonstration purposes.
 
 ## 🤝 Contributing
 
