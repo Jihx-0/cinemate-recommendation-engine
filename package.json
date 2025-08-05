@@ -1,5 +1,5 @@
 {
-  "name": "lumora",
+  "name": "cinemate",
   "version": "1.0.0",
   "description": "AI-Powered Movie Recommendation Engine",
   "scripts": {
@@ -23,6 +23,6 @@
     "python",
     "flask"
   ],
-  "author": "Lumora Team",
+  "author": "BinaryNoodle",
   "license": "MIT"
 } 

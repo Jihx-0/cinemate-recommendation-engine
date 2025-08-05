@@ -1,1 +1,45 @@
+# Environment variables
 .env
+
+# Database files
+*.db
+noodlepicks.db
+moviepicks.db
+
+# Cache files
+cached_movies.json
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Next.js
+.next/
+out/
+build/
+
+# Python
+.venv/
+venv/
+ENV/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
