@@ -42,7 +42,7 @@ class UserSystem:
             )
         ''')
         
-        # Create user_sessions table (for future use)
+        # Create user_sessions table
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS user_sessions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -140,6 +140,28 @@ class UserSystem:
             SELECT id, username, email, created_at FROM users 
             WHERE username = ?
         ''', (username,))
+        
+        result = cursor.fetchone()
+        conn.close()
+        
+        if result:
+            return {
+                'id': result[0],
+                'username': result[1],
+                'email': result[2],
+                'created_at': result[3]
+            }
+        return None
+
+    def get_user_by_email(self, email: str) -> Optional[Dict]:
+        """Get user information by email"""
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        
+        cursor.execute('''
+            SELECT id, username, email, created_at FROM users 
+            WHERE email = ?
+        ''', (email,))
         
         result = cursor.fetchone()
         conn.close()
@@ -279,19 +301,15 @@ class UserSystem:
         return self.get_all_ratings()
     
     def get_collaborative_recommendations(self, user_id: int, n_recommendations: int = 10, available_movie_ids: List[int] = None) -> List[Dict]:
-        """Get REAL collaborative filtering recommendations using matrix factorization"""
+        """Get collaborative filtering recommendations using matrix factorization"""
         from sklearn.metrics.pairwise import cosine_similarity
         from sklearn.decomposition import NMF
         import numpy as np
         
-        print(f"DEBUG COLLAB: Starting collaborative filtering for user {user_id}")
-        
         # Get all user ratings for collaborative filtering
         all_ratings = self.get_all_ratings()
-        print(f"DEBUG COLLAB: Total ratings in system: {len(all_ratings)}")
         
-        if len(all_ratings) < 3:  # Very low minimum data requirement
-            print(f"DEBUG COLLAB: Not enough data ({len(all_ratings)} < 3), using simple recommendations")
+        if len(all_ratings) < 3:
             return self._get_simple_recommendations(user_id, n_recommendations, available_movie_ids, 'collaborative')
         
         # Create user-item matrix
@@ -301,11 +319,9 @@ class UserSystem:
             values='rating', 
             fill_value=0
         )
-        print(f"DEBUG COLLAB: User-item matrix shape: {user_item_matrix.shape}")
         
         # Check if current user exists in matrix
         if user_id not in user_item_matrix.index:
-            print(f"DEBUG COLLAB: User {user_id} not in matrix, using simple recommendations")
             return self._get_simple_recommendations(user_id, n_recommendations, available_movie_ids, 'collaborative')
         
         # Calculate user similarity using cosine similarity
@@ -315,28 +331,23 @@ class UserSystem:
             index=user_item_matrix.index, 
             columns=user_item_matrix.index
         )
-        print(f"DEBUG COLLAB: User similarity matrix shape: {user_similarity_df.shape}")
         
         # Get similar users (top 5 most similar)
         similar_users = user_similarity_df[user_id].sort_values(ascending=False)[1:6]
-        print(f"DEBUG COLLAB: Similar users: {similar_users.to_dict()}")
         
         # Get movies rated by similar users but not by current user
         current_user_ratings = self.get_user_ratings(user_id)
         rated_movie_ids = set(current_user_ratings.keys())
-        print(f"DEBUG COLLAB: Current user rated movies: {rated_movie_ids}")
         
         recommendations = []
         for similar_user_id, similarity_score in similar_users.items():
-            if similarity_score < 0.01:  # Very low similarity threshold
-                print(f"DEBUG COLLAB: Skipping user {similar_user_id} (similarity {similarity_score} < 0.01)")
+            if similarity_score < 0.01:  # Low similarity threshold
                 continue
                 
             similar_user_ratings = self.get_user_ratings(similar_user_id)
-            print(f"DEBUG COLLAB: User {similar_user_id} has {len(similar_user_ratings)} ratings")
             
             for movie_id, rating in similar_user_ratings.items():
-                if movie_id not in rated_movie_ids and rating >= 2:  # Very low rating threshold
+                if movie_id not in rated_movie_ids and rating >= 2:  # Low rating threshold
                     # Calculate collaborative score
                     collab_score = similarity_score * rating / 5.0  # Normalize to 0-1
                     rec_score = 2.0 + (collab_score * 2.0)  # Scale to 2-4
@@ -346,11 +357,9 @@ class UserSystem:
                         'score': round(rec_score, 2),
                         'type': 'collaborative'
                     })
-                    print(f"DEBUG COLLAB: Added recommendation for movie {movie_id} with score {rec_score}")
         
         # Sort by score and return top recommendations
         recommendations.sort(key=lambda x: x['score'], reverse=True)
-        print(f"DEBUG COLLAB: Final collaborative recommendations: {len(recommendations)}")
         return recommendations[:n_recommendations]
     
     def _get_simple_recommendations(self, user_id: int, n_recommendations: int = 10, available_movie_ids: List[int] = None, recommendation_type: str = 'collaborative') -> List[Dict]:
@@ -364,7 +373,7 @@ class UserSystem:
         avg_rating = sum(user_ratings.values()) / len(user_ratings)
         liked_movies = [movie_id for movie_id, rating in user_ratings.items() if rating >= 4]
         
-        # Use available movie IDs if provided, otherwise use a reasonable range
+        # Use available movie IDs if provided
         if available_movie_ids is not None:
             all_movie_ids = set(available_movie_ids)
         else:
@@ -423,47 +432,35 @@ class UserSystem:
         return recommendations[:n_recommendations]
     
     def get_content_based_recommendations(self, user_id: int, n_recommendations: int = 10, available_movie_ids: List[int] = None, movies_df=None) -> List[Dict]:
-        """Get REAL content-based recommendations using TF-IDF and cosine similarity"""
+        """Get content-based recommendations using TF-IDF and cosine similarity"""
         from sklearn.feature_extraction.text import TfidfVectorizer
         from sklearn.metrics.pairwise import cosine_similarity
         import pandas as pd
         
-        print(f"DEBUG CONTENT: Starting content-based filtering for user {user_id}")
-        
         user_ratings = self.get_user_ratings(user_id)
-        print(f"DEBUG CONTENT: User ratings: {user_ratings}")
         
         if not user_ratings:
-            print("DEBUG CONTENT: No user ratings")
             return []
         
         # Get user's liked movies (3-5 stars) - reduced threshold
         liked_movies = [movie_id for movie_id, rating in user_ratings.items() if rating >= 3]
-        print(f"DEBUG CONTENT: Liked movies (3+ stars): {liked_movies}")
         
         if not liked_movies:
-            print("DEBUG CONTENT: No liked movies")
             return []
         
         # Use real movie data if available, otherwise fallback
         if movies_df is not None and not movies_df.empty:
-            print(f"DEBUG CONTENT: Using real movie data, shape: {movies_df.shape}")
             # Filter to available movie IDs
             if available_movie_ids:
                 movies_df_filtered = movies_df[movies_df['movie_id'].isin(available_movie_ids)]
             else:
                 movies_df_filtered = movies_df
             
-            print(f"DEBUG CONTENT: Filtered movies shape: {movies_df_filtered.shape}")
-            print(f"DEBUG CONTENT: Available movie IDs in database: {movies_df_filtered['movie_id'].tolist()[:10]}...")
-            
-            # Check if any of the user's liked movies are in the current database
+            # Check if any of the user's liked movies are in the current db
             # Use the full movies_df to check, not the filtered version
             liked_movies_in_db = [mid for mid in liked_movies if mid in movies_df['movie_id'].values]
-            print(f"DEBUG CONTENT: Liked movies in database: {liked_movies_in_db}")
             
             if not liked_movies_in_db:
-                print("DEBUG CONTENT: None of user's liked movies are in current database, using fallback")
                 # Use fallback approach - recommend based on user's average rating
                 return self._get_simple_recommendations(user_id, n_recommendations, available_movie_ids, 'content-based')
             
@@ -486,55 +483,42 @@ class UserSystem:
                     'content': content
                 })
         else:
-            print("DEBUG CONTENT: No movie data, using fallback")
             # Fallback to simple content data
             movie_content_data = []
             for movie_id in available_movie_ids or range(1, 1000):
                 movie_content_data.append({
                     'movie_id': movie_id,
-                    'content': f"movie {movie_id} action drama thriller"  # Placeholder
+                    'content': f"movie {movie_id} action drama thriller"
                 })
         
-        print(f"DEBUG CONTENT: Movie content data count: {len(movie_content_data)}")
-        
         if not movie_content_data:
-            print("DEBUG CONTENT: No movie content data")
             return []
         
         # Create TF-IDF vectors from movie content
         tfidf = TfidfVectorizer(stop_words='english', max_features=1000, min_df=1)
         content_matrix = tfidf.fit_transform([movie['content'] for movie in movie_content_data])
-        print(f"DEBUG CONTENT: TF-IDF matrix shape: {content_matrix.shape}")
         
         # Calculate user profile (average of liked movies that are in the database)
         user_profile = None
         movies_used_for_profile = 0
         
-        print(f"DEBUG CONTENT: Looking for liked movies in content data: {liked_movies_in_db}")
-        print(f"DEBUG CONTENT: Available movie IDs in content data: {[m['movie_id'] for m in movie_content_data[:10]]}...")
-        
         for liked_movie_id in liked_movies_in_db:
             movie_idx = next((i for i, m in enumerate(movie_content_data) if m['movie_id'] == liked_movie_id), None)
-            print(f"DEBUG CONTENT: Looking for movie {liked_movie_id}, found at index: {movie_idx}")
             if movie_idx is not None:
                 if user_profile is None:
                     user_profile = content_matrix[movie_idx]
                 else:
                     user_profile += content_matrix[movie_idx]
                 movies_used_for_profile += 1
-                print(f"DEBUG CONTENT: Added movie {liked_movie_id} to user profile")
         
         if user_profile is None:
-            print("DEBUG CONTENT: Could not create user profile")
             return []
         
         # Normalize user profile
         user_profile = user_profile / movies_used_for_profile
-        print(f"DEBUG CONTENT: User profile created with {movies_used_for_profile} movies")
         
         # Calculate similarity with all movies
         similarities = cosine_similarity(user_profile, content_matrix).flatten()
-        print(f"DEBUG CONTENT: Calculated similarities for {len(similarities)} movies")
         
         # Get top similar movies (excluding already rated)
         rated_movie_ids = set(user_ratings.keys())
@@ -547,8 +531,6 @@ class UserSystem:
                     'score': similarities[i],
                     'type': 'content-based'
                 })
-        
-        print(f"DEBUG CONTENT: Found {len(movie_scores)} unrated movies with scores")
         
         # Sort by similarity score
         movie_scores.sort(key=lambda x: x['score'], reverse=True)
@@ -563,9 +545,7 @@ class UserSystem:
                 'score': round(rec_score, 2),
                 'type': 'content-based'
             })
-            print(f"DEBUG CONTENT: Added recommendation for movie {movie_score['movie_id']} with score {rec_score}")
         
-        print(f"DEBUG CONTENT: Final content-based recommendations: {len(recommendations)}")
         return recommendations
     
     def collaborative_filtering_recommendations(self, user_id: int, movies_df: pd.DataFrame, n_recommendations: int = 10) -> List[Dict]:
@@ -611,7 +591,7 @@ class UserSystem:
             
             for movie_id, rating in similar_user_ratings.items():
                 if movie_id not in rated_movie_ids and rating >= 4:  # Only highly rated movies
-                    # Check if movie exists in our database
+                    # Check if movie exists in our db
                     movie_data = movies_df[movies_df['movie_id'] == movie_id]
                     if not movie_data.empty:
                         movie_dict = movie_data.iloc[0].to_dict()
