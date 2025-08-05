@@ -67,7 +67,7 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Cinemate
+   cd cinemate-recommendation-engine
    ```
 
 2. **Set up environment variables**
@@ -154,19 +154,6 @@ Cinemate/
 - **Genre Coverage**: Limited by TMDb dataset availability and movie metadata quality.
 
 - **Real-time Updates**: Movie data is cached and requires manual refresh to get new releases.
-
-## 🚀 Deployment
-
-### Local Development
-```bash
-npm run dev
-```
-
-### Production Deployment
-1. Set up environment variables for production
-2. Build the frontend: `npm run build`
-3. Deploy backend to your preferred hosting service
-4. Configure CORS settings for your domain
 
 ## 🤝 Contributing
 
