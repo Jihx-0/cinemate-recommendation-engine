@@ -1,23 +1,19 @@
 import os
 import pandas as pd
 import numpy as np
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
+from flask import Flask, request, redirect, session, jsonify
 from flask_cors import CORS
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.metrics.pairwise import cosine_similarity
 from dotenv import load_dotenv
-import requests
 from tmdb_client import TMDBClient
 from user_system import UserSystem
-import hashlib
 
-# Load environment variables
-load_dotenv()
+# Load .env file
+load_dotenv('../.env')
 
 app = Flask(__name__)
 app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-here')
 
-# Configure session for cross-origin requests
+# Configure session
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
@@ -26,13 +22,13 @@ app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cross-subdomain cookies
 # Enable CORS for React frontend
 CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
 
-# Initialize TMDB client
+# Init TMDB client
 tmdb_client = TMDBClient()
 
-# Initialize user system
+# Init user system
 user_system = UserSystem()
 
-# Global variable to store movies data
+# Global var to store movies
 movies_df = None
 
 def load_movie_data():
@@ -45,18 +41,12 @@ def load_movie_data():
     cache_file = "cached_movies.json"
     if os.path.exists(cache_file):
         try:
-            print("Loading movies from cache...")
             with open(cache_file, 'r') as f:
                 cached_data = json.load(f)
             movies_df = pd.DataFrame(cached_data)
-            print(f"Loaded {len(movies_df)} movies from cache")
-            print(f"Movies_df shape: {movies_df.shape}")
-            print(f"Sample movie IDs: {movies_df['movie_id'].head(10).tolist()}")
             return
         except Exception as e:
-            print(f"Failed to load from cache: {e}")
-    
-    print("Loading movie data from TMDb...")
+            pass
     
     # Set a fixed seed for consistent results
     import random
@@ -64,32 +54,27 @@ def load_movie_data():
     
     # Try to get popular movies from TMDb (fetch many more pages for larger dataset)
     movies = []
-    for page in range(1, 51):  # Fetch 50 pages = up to 1000 movies
+    # Fetch 50 pages = up to 1000 movies - configuranble
+    for page in range(1, 51):
         page_movies = tmdb_client.get_popular_movies(page=page, limit=20)
         if page_movies:
             movies.extend(page_movies)
-            print(f"Loaded {len(page_movies)} movies from page {page}")
         else:
-            print(f"No movies returned from page {page}")
             break
     
     if movies:
-        print(f"Successfully loaded {len(movies)} movies from TMDb")
         movies_df = pd.DataFrame(movies)
         
-        # Remove duplicates based on movie_id and title
+        # Remove duplicates
         movies_df = movies_df.drop_duplicates(subset=['movie_id'], keep='first')
         movies_df = movies_df.drop_duplicates(subset=['title'], keep='first')
         
-        # Sort by movie_id to ensure consistent order
+        # Sort by movie_id
         movies_df = movies_df.sort_values('movie_id').reset_index(drop=True)
         
-        # Take up to 1000 movies (or all if less than 1000)
+        # Take up to 1000 movies
         if len(movies_df) > 1000:
             movies_df = movies_df.head(1000)
-        
-        print(f"Movies_df shape after deduplication: {movies_df.shape}")
-        print(f"Sample movie IDs: {movies_df['movie_id'].head(10).tolist()}")
         
         # Add poster and backdrop URLs
         if 'poster_path' in movies_df.columns:
@@ -100,13 +85,11 @@ def load_movie_data():
         # Cache the movies
         try:
             movies_df.to_json(cache_file, orient='records')
-            print(f"Movies cached to {cache_file}")
         except Exception as e:
-            print(f"Failed to cache movies: {e}")
+            pass
     else:
-        print("Failed to load from TMDb, using fallback data")
-        # Fallback to sample data with consistent IDs
-        np.random.seed(42)  # Fixed seed for consistent fallback data
+        # Fallback to sample data 
+        np.random.seed(42)
         
         # Generate unique movie IDs and titles
         movie_ids = list(range(1, 1001))
@@ -122,69 +105,73 @@ def load_movie_data():
             'release_date': [f'{np.random.randint(2010, 2024)}-{np.random.randint(1, 13):02d}-{np.random.randint(1, 29):02d}' for _ in range(1000)]
         })
         
-        # Ensure no duplicates (shouldn't be any, but just in case)
+        # Ensure no duplicates
         movies_df = movies_df.drop_duplicates(subset=['movie_id'], keep='first')
         movies_df = movies_df.drop_duplicates(subset=['title'], keep='first')
-        
-        print(f"Fallback movies_df shape after deduplication: {movies_df.shape}")
-        print(f"Fallback sample movie IDs: {movies_df['movie_id'].head(10).tolist()}")
         
         # Cache the fallback movies too
         try:
             movies_df.to_json(cache_file, orient='records')
-            print(f"Fallback movies cached to {cache_file}")
         except Exception as e:
-            print(f"Failed to cache fallback movies: {e}")
+            pass
 
 # Load movie data on startup
 load_movie_data()
 
 def get_recommendations_for_user(user_id, n_recommendations=10):
-    """Get personalized recommendations using REAL machine learning"""
+    """Get personalized recommendations using machine learning"""
     try:
-        print(f"DEBUG: Getting recommendations for user {user_id}")
-        
         # Get user's ratings
         user_ratings = user_system.get_user_ratings(user_id)
-        print(f"DEBUG: User has {len(user_ratings)} ratings: {user_ratings}")
         
         if not user_ratings:
-            print("DEBUG: No user ratings, returning empty list")
             return []
         
-        # Get available movie IDs from the movies database
+        # Get available movie IDs from the db
         available_movie_ids = movies_df['movie_id'].tolist() if movies_df is not None else []
-        print(f"DEBUG: Available movie IDs count: {len(available_movie_ids)}")
         
-        # Filter out movies the user has already rated
+        # Filter out already rated
         rated_movie_ids = set(user_ratings.keys())
         available_movie_ids = [mid for mid in available_movie_ids if mid not in rated_movie_ids]
-        print(f"DEBUG: Available movie IDs after filtering: {len(available_movie_ids)}")
         
         # If no movies available after filtering, return empty list
         if not available_movie_ids:
-            print("DEBUG: No available movies after filtering")
             return []
         
-        # Try content-based first, then collaborative if that fails
-        print(f"DEBUG: Getting {n_recommendations} content-based recommendations")
-        recommendations = user_system.get_content_based_recommendations(user_id, n_recommendations, available_movie_ids, movies_df)
-        print(f"DEBUG: Content-based recommendations: {len(recommendations)}")
+        # Get content-based recommendations
+        content_recommendations = user_system.get_content_based_recommendations(user_id, n_recommendations, available_movie_ids, movies_df)
         
-        # If content-based didn't work, try collaborative
-        if len(recommendations) == 0:
-            print(f"DEBUG: Content-based failed, trying collaborative filtering")
-            recommendations = user_system.get_collaborative_recommendations(user_id, n_recommendations, available_movie_ids)
-            print(f"DEBUG: Collaborative recommendations: {len(recommendations)}")
+        # Try collaborative filtering too
+        try:
+            collaborative_recommendations = user_system.get_collaborative_recommendations(user_id, n_recommendations, available_movie_ids)
+        except Exception as e:
+            collaborative_recommendations = []
         
-        print(f"DEBUG: Total recommendations before enrichment: {len(recommendations)}")
+        # Combine recommendations (60% content-based, 40% collaborative)
+        recommendations = []
+        
+        # Add content-based recommendations
+        content_count = min(len(content_recommendations), int(n_recommendations * 0.6))
+        recommendations.extend(content_recommendations[:content_count])
+        
+        # Add collaborative recommendations
+        collab_count = min(len(collaborative_recommendations), n_recommendations - len(recommendations))
+        recommendations.extend(collaborative_recommendations[:collab_count])
+        
+        # If we still don't have enough, add more from whichever has more
+        if len(recommendations) < n_recommendations:
+            remaining = n_recommendations - len(recommendations)
+            if len(content_recommendations) > content_count:
+                recommendations.extend(content_recommendations[content_count:content_count + remaining])
+            elif len(collaborative_recommendations) > collab_count:
+                recommendations.extend(collaborative_recommendations[collab_count:collab_count + remaining])
         
         # Enrich recommendations with full movie data
         enriched_recommendations = []
         for rec in recommendations[:n_recommendations]:
             movie_id = rec['movie_id']
             
-            # Double-check that this movie hasn't been rated (safety check)
+            # Double-check that this movie hasn't been rated
             if movie_id in rated_movie_ids:
                 continue
             
@@ -209,30 +196,25 @@ def get_recommendations_for_user(user_id, n_recommendations=10):
                 }
                 enriched_recommendations.append(enriched_rec)
         
-        print(f"DEBUG: Final enriched recommendations: {len(enriched_recommendations)}")
         return enriched_recommendations
     
     except Exception as e:
-        print(f"Error getting recommendations: {e}")
-        import traceback
-        traceback.print_exc()
         return []
 
 # API Routes for React Frontend
-
 @app.route('/api/popular-movies')
 def api_popular_movies():
     """API endpoint to get popular movies for homepage"""
     try:
         # Get a random sample of 12 movies for variety
-        # Use session-based randomization for different experience each visit
+        # Use session-based randomization
         import random
         import time
         
         # Create a seed based on current time and session (if available)
-        seed_base = int(time.time()) // 300  # Changes every 5 minutes
+        seed_base = int(time.time()) // 300
         if 'user_id' in session:
-            seed_base += session['user_id']  # Different for each user
+            seed_base += session['user_id']
         
         if len(movies_df) > 12:
             popular_movies = movies_df.sample(n=12, random_state=seed_base).to_dict('records')
@@ -254,8 +236,8 @@ def api_rate_movies():
         # Get page parameter from query string
         page = request.args.get('page', 1, type=int)
         movies_per_page = 21
-        total_pages = 20  # Increased from 10 to 20 pages for more movies
-        total_movies_needed = movies_per_page * total_pages  # 420 movies total
+        total_pages = 20
+        total_movies_needed = movies_per_page * total_pages
         
         # Ensure page is within valid range
         if page < 1:
@@ -263,7 +245,6 @@ def api_rate_movies():
         elif page > total_pages:
             page = total_pages
         
-        # Get total available movies
         total_available_movies = len(movies_df)
         
         # If we don't have enough movies, adjust the number of pages
@@ -273,29 +254,24 @@ def api_rate_movies():
             if page > total_pages:
                 page = total_pages
         
-        # Use consistent sampling instead of random sampling
         # Sort by movie_id to ensure consistent order, then shuffle for variety
         sorted_movies = movies_df.sort_values('movie_id').reset_index(drop=True)
         
-        # Take the first 420 movies (or all available if less than 420)
         if total_available_movies >= total_movies_needed:
-            # Take exactly 420 movies from the beginning
             sampled_movies = sorted_movies.head(total_movies_needed)
         else:
-            # Use all available movies if less than 420
             sampled_movies = sorted_movies
         
         # Shuffle the movies for variety while keeping the same set
-        # Use a different random seed for each page to ensure variety across pages
+        # Use a different random seed for each page to ensure variety
         import random
         page_seed = random.randint(1, 1000) + (page * 100)  # Different seed per page
         sampled_movies = sampled_movies.sample(frac=1, random_state=page_seed).reset_index(drop=True)
         
-        # Calculate start and end indices for this page
         start_idx = (page - 1) * movies_per_page
         end_idx = start_idx + movies_per_page
         
-        # Get movies for this page
+        # Get movies page
         if start_idx < len(sampled_movies):
             page_movies = sampled_movies.iloc[start_idx:end_idx].to_dict('records')
         else:
@@ -459,7 +435,12 @@ def api_login():
         password = data.get('password')
         
         if not username or not password:
-            return jsonify({'error': 'Username and password required'}), 400
+            return jsonify({'error': 'Username and password are required'}), 400
+        
+        # Check if user exists first
+        user = user_system.get_user_by_username(username)
+        if not user:
+            return jsonify({'error': 'User not found. Please check your username or create a new account.'}), 404
         
         user_id = user_system.authenticate_user(username, password)
         
@@ -468,10 +449,10 @@ def api_login():
             user = user_system.get_user_by_id(user_id)
             return jsonify({'message': 'Login successful', 'user': user})
         else:
-            return jsonify({'error': 'Invalid credentials'}), 401
+            return jsonify({'error': 'Invalid password. Please check your credentials and try again.'}), 401
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Server error. Please try again later.'}), 500
 
 @app.route('/register', methods=['POST'])
 def api_register():
@@ -483,11 +464,36 @@ def api_register():
         password = data.get('password')
         
         if not username or not email or not password:
-            return jsonify({'error': 'Username, email, and password required'}), 400
+            return jsonify({'error': 'Username, email, and password are required'}), 400
+        
+        # Password validation
+        if len(password) < 8:
+            return jsonify({'error': 'Password must be at least 8 characters long'}), 400
+        
+        if not any(c.isupper() for c in password):
+            return jsonify({'error': 'Password must contain at least one uppercase letter'}), 400
+        
+        if not any(c.islower() for c in password):
+            return jsonify({'error': 'Password must contain at least one lowercase letter'}), 400
+        
+        if not any(c.isdigit() for c in password):
+            return jsonify({'error': 'Password must contain at least one number'}), 400
+        
+        # Username validation
+        if len(username) < 3:
+            return jsonify({'error': 'Username must be at least 3 characters long'}), 400
+        
+        # Email validation
+        if '@' not in email or '.' not in email:
+            return jsonify({'error': 'Please enter a valid email address'}), 400
         
         # Check if user already exists
         if user_system.get_user_by_username(username):
-            return jsonify({'error': 'Username already exists'}), 409
+            return jsonify({'error': 'Username already exists. Please choose a different username.'}), 409
+        
+        # Check if email already exists
+        if user_system.get_user_by_email(email):
+            return jsonify({'error': 'Email already registered. Please use a different email or try logging in.'}), 409
         
         # Create new user
         user_id = user_system.create_user(username, email, password)
@@ -497,10 +503,10 @@ def api_register():
             user = user_system.get_user_by_id(user_id)
             return jsonify({'message': 'Registration successful', 'user': user})
         else:
-            return jsonify({'error': 'Registration failed'}), 500
+            return jsonify({'error': 'Registration failed. Please try again.'}), 500
     
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        return jsonify({'error': 'Server error. Please try again later.'}), 500
 
 @app.route('/logout', methods=['POST'])
 def api_logout():
@@ -579,11 +585,10 @@ def api_forgot_password():
         token = user_system.generate_reset_token(username, email)
         
         if token:
-            # In a real application, you would send this token via email
-            # For now, we'll return it in the response (in production, this should be sent via email)
+            # In prod, this token would be sent via email
             return jsonify({
                 'message': 'Password reset instructions sent!',
-                'token': token,  # Remove this in production
+                'token': token,  # Remove this in prod
                 'note': 'In production, this token would be sent via email'
             })
         else:
@@ -619,7 +624,7 @@ def api_reset_password_with_token():
         print(f"Reset password with token error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
-# Legacy routes for backward compatibility (optional)
+# Legacy routes for backward compatibility
 @app.route('/')
 def home():
     """Legacy home route - redirects to React frontend"""

@@ -1,20 +1,16 @@
 import requests
 import os
 from typing import List, Dict, Optional
-import time
 
 class TMDBClient:
     """Client for interacting with The Movie Database (TMDb) API"""
     
     def __init__(self, api_key: Optional[str] = None):
-        # For testing - replace with your actual TMDb API key
         self.api_key = api_key or os.getenv('TMDB_API_KEY') or "YOUR_TMDB_API_KEY_HERE"
         self.base_url = "https://api.themoviedb.org/3"
         self.image_base_url = "https://image.tmdb.org/t/p/w500"
         
         if not self.api_key or self.api_key == "YOUR_TMDB_API_KEY_HERE":
-            print("Warning: No TMDb API key found. Set TMDB_API_KEY environment variable or pass api_key parameter.")
-            print("Get your free API key at: https://www.themoviedb.org/settings/api")
             self.api_key = None
     
     def get_popular_movies(self, page: int = 1, limit: int = 50) -> List[Dict]:
