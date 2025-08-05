@@ -1,216 +1,178 @@
-# Lumora - Modern AI-Powered Movie Recommendation Engine
+# Cinemate 🎬
 
-A cutting-edge movie recommendation platform built with **React + Next.js + TypeScript** frontend and **Python Flask** backend, featuring advanced AI/ML algorithms for personalized movie suggestions.
+A sophisticated movie recommendation system that combines content-based and collaborative filtering to deliver personalized movie suggestions. 
 
-![Lumora](https://img.shields.io/badge/Lumora-AI%20Powered%20Movie%20Recommendations-purple)
-![React](https://img.shields.io/badge/React-18.0+-blue)
-![Next.js](https://img.shields.io/badge/Next.js-15.0+-black)
-![TypeScript](https://img.shields.io/badge/TypeScript-5.0+-blue)
-![Python](https://img.shields.io/badge/Python-3.8+-green)
-![Flask](https://img.shields.io/badge/Flask-2.3+-lightgrey)
+Cinemate is a full-stack web application that helps users discover movies they'll love. Unlike simple recommendation systems, Cinemate uses advanced machine learning techniques to analyze both movie content and user behavior patterns, providing highly personalized recommendations.
 
-## 🚀 Modern Tech Stack
+### Key Features
 
-### Frontend (React + Next.js)
-- **React 18** with modern hooks and functional components
-- **Next.js 15** with App Router for optimal performance
-- **TypeScript** for type safety and better developer experience
-- **Tailwind CSS** for modern, responsive design
-- **Framer Motion** for smooth animations
-- **React Query (TanStack Query)** for efficient data fetching and caching
-- **Lucide React** for beautiful icons
-- **Headless UI** for accessible components
+- **🎯 Personalized Recommendations**: AI-powered suggestions based on your unique taste
+- **🧠 Content-Based Filtering**: Analyzes movie content using TF-IDF vectorization and cosine similarity
+- **👥 Collaborative Filtering**: Finds users with similar tastes and recommends what they enjoyed
+- **🔄 Hybrid Approach**: Combines both algorithms for superior recommendation quality
+- **📊 Real-time Learning**: Gets smarter as you rate more movies
+- **🎨 Modern UI/UX**: Responsive interface with smooth animations
+- **🔐 Secure Authentication**: User accounts with password validation and session management
 
-### Backend (Python Flask)
-- **Flask** with RESTful API design
-- **Pandas** for data manipulation
-- **Scikit-learn** for machine learning algorithms
-- **SQLite** for data persistence
-- **TMDb API** integration for real movie data
-- **CORS** support for cross-origin requests
+## 🛠 Tech Stack
 
-### AI/ML Features
-- **Content-based filtering** using TF-IDF vectorization
-- **Collaborative filtering** with user similarity
-- **Hybrid recommendations** combining multiple approaches
-- **Real-time personalization** based on user ratings
+### Frontend
+- **React 19.1.0** - Modern UI framework
+- **Next.js 15.4.5** - Full-stack React framework with App Router
+- **TypeScript 5** - Type-safe JavaScript
+- **Tailwind CSS** - Utility-first CSS framework
+- **Framer Motion** - Smooth animations and transitions
+- **React Query (TanStack Query)** - Server state management
+- **Lucide React** - Beautiful icons
+- **Headless UI** - Accessible UI components
 
-## ✨ Features
+### Backend
+- **Python 3.8+** - Backend runtime
+- **Flask 2.3.3** - Lightweight web framework
+- **Pandas** - Data manipulation and analysis
+- **Scikit-learn** - Machine learning algorithms
+- **SQLite** - Lightweight database
+- **TMDb API** - Movie data source
+- **Flask-CORS** - Cross-origin resource sharing
 
-### 🎯 Modern User Experience
-- **Responsive Design** - Works perfectly on desktop, tablet, and mobile
-- **Smooth Animations** - Framer Motion powered transitions
-- **Real-time Updates** - Instant feedback and loading states
-- **Progressive Web App** - Fast, reliable, and engaging
+## 🧠 AI/ML Features
 
-### 🧠 AI-Powered Recommendations
-- **Personalized Suggestions** - Based on your unique taste
-- **Multiple Algorithms** - Content-based, collaborative, and hybrid filtering
-- **Smart Learning** - Gets better with every rating
-- **Real Movie Data** - Powered by TMDb API
+Cinemate uses advanced machine learning algorithms to deliver personalized recommendations:
 
-### 👤 User Management
-- **Secure Authentication** - User registration and login
-- **Profile Management** - Track your movie history and preferences
-- **Rating System** - Rate movies with interactive star ratings
-- **Recommendation History** - See what you've been recommended
+### Content-Based Filtering
+- **TF-IDF Vectorization**: Converts movie titles, overviews, and genres into numerical vectors
+- **Cosine Similarity**: Measures similarity between movies based on their content vectors
+- **User Profile Creation**: Builds a profile from your liked movies' content vectors
 
-### 🎬 Movie Discovery
-- **Popular Movies** - Trending films on the homepage
-- **Detailed Information** - Posters, ratings, genres, and descriptions
-- **Search & Filter** - Find movies by various criteria
-- **Share Recommendations** - Share your favorite discoveries
+### Collaborative Filtering
+- **User Similarity Matrix**: Calculates similarity between users using cosine similarity
+- **Rating Patterns**: Analyzes how users rate movies to find taste similarities
+- **Neighborhood-Based**: Identifies the most similar users to you
 
-## 🛠️ Installation & Setup
+### Hybrid Recommendation System
+- **60% Content-Based**: Leverages movie content analysis
+- **40% Collaborative**: Utilizes user behavior patterns
+- **Dynamic Weighting**: Adjusts based on available data
+- **Fallback Mechanisms**: Graceful degradation when data is limited
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js 18+** and **npm**
-- **Python 3.8+** and **pip**
-- **TMDb API Key** (free at [themoviedb.org](https://www.themoviedb.org/settings/api))
+- Node.js 18+ and npm
+- Python 3.8+
+- TMDb API key (free at [themoviedb.org](https://www.themoviedb.org/settings/api))
 
-### Quick Start
+### Installation
 
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd Lumora
+   cd Cinemate
    ```
 
-2. **Install dependencies**
+2. **Set up environment variables**
    ```bash
+   # Create .env file with your API keys:
+   echo "TMDB_API_KEY=your_api_key_here" > .env
+   echo "FLASK_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+   echo "NEXT_PUBLIC_API_URL=http://localhost:5001" >> .env
+   ```
+   
+   **Important**: Replace `your_api_key_here` with your actual TMDb API key from [themoviedb.org](https://www.themoviedb.org/settings/api)
+
+3. **Install dependencies**
+   ```bash
+   # Install all dependencies (frontend and backend)
    npm run install:all
-   ```
-
-3. **Set up environment variables**
-   ```bash
-   # Create .env file in the root directory
-   echo "TMDB_API_KEY=your_tmdb_api_key_here" > .env
-   echo "FLASK_SECRET_KEY=your_secret_key_here" >> .env
    ```
 
 4. **Start the development servers**
    ```bash
+   # This starts both frontend and backend concurrently
    npm run dev
    ```
 
 5. **Open your browser**
-   - Frontend: [http://localhost:3000](http://localhost:3000)
-   - Backend API: [http://localhost:5000](http://localhost:5000)
-
-### Manual Setup
-
-#### Frontend Setup
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-#### Backend Setup
-```bash
-cd backend
-pip install -r requirements.txt
-python app.py
-```
+   Navigate to [http://localhost:3000](http://localhost:3000)
 
 ## 📁 Project Structure
 
 ```
-Lumora/
-├── frontend/                 # React + Next.js frontend
+Cinemate/
+├── frontend/                 # React/Next.js frontend
 │   ├── src/
 │   │   ├── app/             # Next.js App Router pages
-│   │   ├── components/      # Reusable React components
-│   │   │   ├── ui/         # Base UI components
-│   │   │   └── ...         # Feature components
-│   │   ├── lib/            # Utilities and API client
+│   │   ├── components/      # Reusable UI components
+│   │   ├── lib/            # Utilities and API clients
 │   │   └── providers/      # React context providers
-│   ├── public/             # Static assets
 │   └── package.json
-├── backend/                 # Python Flask backend
+├── backend/                 # Flask backend
 │   ├── app.py              # Main Flask application
+│   ├── user_system.py      # User management & ML algorithms
 │   ├── tmdb_client.py      # TMDb API integration
-│   ├── user_system.py      # User management and ML
 │   └── requirements.txt
-├── package.json            # Root package.json for scripts
+├── .env                    # Environment variables
 └── README.md
 ```
 
-## 🎨 Modern UI Components
+## 🎯 How It Works
 
-### Design System
-- **Consistent Color Palette** - Purple and blue gradient theme
-- **Typography** - Inter font for modern readability
-- **Spacing** - Consistent spacing using Tailwind's design tokens
-- **Components** - Reusable, accessible UI components
+### 1. User Registration & Rating
+- Create an account and start rating movies
+- Rate movies you've watched (1-5 stars)
+- The system learns your preferences from your ratings
 
-### Key Components
-- **MovieCard** - Responsive movie display with ratings
-- **Navigation** - Modern navbar with user menu
-- **StarRating** - Interactive rating component
-- **Button** - Multiple variants and sizes
-- **Card** - Flexible content containers
+### 2. Content Analysis
+- **TF-IDF Processing**: Movie content (title, overview, genre) is converted to vectors
+- **Similarity Calculation**: Cosine similarity finds movies with similar content
+- **Profile Building**: Your liked movies create a content preference profile
 
-## 🔧 API Endpoints
+### 3. Collaborative Analysis
+- **User Similarity**: Finds users with similar rating patterns
+- **Pattern Recognition**: Identifies what similar users enjoyed
+- **Rating Prediction**: Predicts your likely ratings for unseen movies
 
-### Authentication
-- `POST /login` - User login
-- `POST /register` - User registration
-- `POST /logout` - User logout
-- `GET /user` - Get current user
+### 4. Hybrid Recommendations
+- **Algorithm Combination**: Merges content-based and collaborative results
+- **Smart Weighting**: Balances both approaches based on data availability
+- **Personalized Results**: Delivers unique recommendations for each user
 
-### Movies
-- `GET /api/popular-movies` - Get popular movies for homepage
-- `GET /api/rate-movies` - Get movies for rating
-- `POST /api/submit-ratings` - Submit user ratings
-
-### Recommendations
-- `GET /api/recommendations` - Get personalized recommendations
-- `GET /api/profile` - Get user profile
-- `GET /api/user-stats` - Get user statistics
-- `GET /api/rating-history` - Get user rating history
-
-## 🚀 Deployment
-
-### Frontend (Vercel/Netlify)
-```bash
-cd frontend
-npm run build
-# Deploy the .next folder
-```
-
-### Backend (Render/Railway)
-```bash
-cd backend
-# Deploy with requirements.txt and app.py
-```
+## 🔧 Configuration
 
 ### Environment Variables
-Set these in your deployment platform:
-- `TMDB_API_KEY` - Your TMDb API key
-- `FLASK_SECRET_KEY` - Secure secret key for sessions
-- `NEXT_PUBLIC_API_URL` - Your backend API URL
+- `TMDB_API_KEY`: Your TMDb API key for movie data
+- `FLASK_SECRET_KEY`: Secret key for Flask sessions
+- `NEXT_PUBLIC_API_URL`: Backend API URL (default: http://localhost:5001)
 
-## 🤝 Contributing
+### ML Algorithm Parameters
+- **TF-IDF**: 1000 max features, English stop words
+- **Cosine Similarity**: Standard cosine distance metric
+- **User Similarity**: Top 5 most similar users
+- **Rating Thresholds**: Minimum 3 stars for content-based, 2 stars for collaborative
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+## ⚠️ Limitations
+
+- **Data Source Size Impact**: The current implementation uses ~1,000 movies from TMDb's popular movies API. Larger datasets (10,000+ movies) would significantly improve recommendation accuracy by providing more diverse content vectors for TF-IDF analysis.
+
+- **TF-IDF Match Accuracy**: The `tfidf_scores` variable represents the similarity scores between user preferences and movie content. Higher scores (closer to 1.0) indicate better matches, but accuracy depends heavily on the dataset size and quality of movie metadata (overview, genre, title).
+
+- **Cold Start Problem**: New users with few ratings may receive less accurate recommendations until they rate more movies, as the system needs sufficient data to build reliable user profiles.
+
+- **Genre Coverage**: Recommendations are limited to movies available in the TMDb dataset, which may not include all genres or niche films.
+
+- **Real-time Updates**: Movie data is cached locally and requires manual refresh to include new releases from TMDb.
 
 ## 📝 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 🙏 Acknowledgments
+## 🙏 Sources
 
-- **TMDb** for providing the movie database API
-- **Next.js** team for the amazing React framework
-- **Tailwind CSS** for the utility-first CSS framework
-- **Framer Motion** for smooth animations
-- **React Query** for efficient data management
+- [TMDb](https://www.themoviedb.org/)
+- [Scikit-learn](https://scikit-learn.org/)
+- [Next.js](https://nextjs.org/)
+- [Flask](https://flask.palletsprojects.com/)
 
 ---
 
-**Lumora** - Discover your next favorite movie with AI-powered recommendations! 🎬✨ 
+Built by BinaryNoodle
