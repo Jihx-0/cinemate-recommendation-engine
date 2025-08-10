@@ -205,22 +205,12 @@ def save_movie_to_local_db(movie_id: int, movie_data: dict):
     """Save movie details to local database if it doesn't exist"""
     global movies_df
     
-    print(f"=== save_movie_to_local_db called for movie {movie_id} ===")
-    print(f"movie_data: {movie_data}")
-    
     if movies_df is None:
-        print(f"movies_df is None, cannot save movie {movie_id}")
         return
-    
-    print(f"movies_df shape before: {movies_df.shape}")
-    print(f"movies_df movie_ids before: {movies_df['movie_id'].tolist()[:10]}")
     
     # Check if movie already exists in our database
     if movie_id in movies_df['movie_id'].values:
-        print(f"Movie {movie_id} already exists in database")
         return
-    
-    print(f"Saving movie {movie_id} to local database: {movie_data.get('title', 'Unknown')}")
     
     # Create new movie entry
     new_movie = {
@@ -236,24 +226,16 @@ def save_movie_to_local_db(movie_id: int, movie_data: dict):
         'backdrop_url': movie_data.get('backdrop_url')
     }
     
-    print(f"new_movie entry: {new_movie}")
-    
     # Add to movies_df
     new_movie_df = pd.DataFrame([new_movie])
     movies_df = pd.concat([movies_df, new_movie_df], ignore_index=True)
-    
-    print(f"movies_df shape after: {movies_df.shape}")
-    print(f"movies_df movie_ids after: {movies_df['movie_id'].tolist()[-5:]}")
     
     # Save to cache file
     try:
         # Save to current directory
         movies_df.to_json("cached_movies.json", orient='records')
-        print(f"Successfully saved movie {movie_id} to cache")
     except Exception as e:
-        print(f"Error saving movie to cache: {e}")
-    
-    print(f"=== save_movie_to_local_db completed for movie {movie_id} ===")
+        pass
 
 # API Routes for React Frontend
 @app.route('/api/popular-movies')
@@ -391,31 +373,22 @@ def api_submit_ratings():
         movie_details = data.get('movie_details', {})  # New field for movie details
         
         user_id = session['user_id']
-        print(f"Processing ratings for user {user_id}: {ratings}")
-        print(f"Movie details: {movie_details}")
         
-        # Process ratings
-        for rating_key, rating_value in ratings.items():
-            if rating_key.startswith('rating_'):
-                movie_id = int(rating_key.replace('rating_', ''))
+        for key, value in ratings.items():
+            if key.startswith('rating_'):
+                movie_id = int(key.replace('rating_', ''))
+                rating_value = int(value)
                 
-                # Save movie details to local database if provided
-                if str(movie_id) in movie_details:
-                    print(f"Saving movie details for movie {movie_id}")
+                if movie_details and str(movie_id) in movie_details:
                     save_movie_to_local_db(movie_id, movie_details[str(movie_id)])
                 
-                # Save the rating
-                print(f"Saving rating {rating_value} for movie {movie_id}")
                 try:
                     user_system.add_rating(user_id, movie_id, rating_value)
-                    print(f"Successfully saved rating {rating_value} for movie {movie_id}")
                 except Exception as e:
-                    print(f"Error saving rating for movie {movie_id}: {e}")
                     return jsonify({'error': f'Failed to save rating: {str(e)}'}), 500
         
         return jsonify({'message': 'Ratings submitted successfully'})
     except Exception as e:
-        print(f"Error in submit-ratings: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/remove-rating', methods=['POST'])
@@ -442,7 +415,6 @@ def api_remove_rating():
         
         return jsonify({'message': 'Rating removed successfully', 'movie_id': movie_id})
     except Exception as e:
-        print(f"Error in remove-rating endpoint: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/recommendations')
@@ -508,19 +480,13 @@ def api_rating_history():
         user_id = session['user_id']
         ratings = user_system.get_user_ratings(user_id)
         
-        print(f"Rating history for user {user_id}: {ratings}")
-        print(f"movies_df shape: {movies_df.shape if movies_df is not None else 'None'}")
-        print(f"movies_df movie_ids: {movies_df['movie_id'].tolist()[:10] if movies_df is not None else 'None'}")
-        
         # Get movie details for the rated movies
         rating_history = []
         if ratings and movies_df is not None:
             for movie_id, rating in ratings.items():
-                print(f"Looking for movie {movie_id} in movies_df")
                 movie_data = movies_df[movies_df['movie_id'] == movie_id]
                 if not movie_data.empty:
                     movie_info = movie_data.iloc[0].to_dict()
-                    print(f"Found movie {movie_id}: {movie_info.get('title', 'Unknown')}")
                     rating_history.append({
                         'movie_id': movie_id,
                         'rating': rating,
@@ -533,7 +499,6 @@ def api_rating_history():
                         'release_date': movie_info.get('release_date', '')
                     })
                 else:
-                    print(f"Movie {movie_id} not found in movies_df, using fallback title")
                     # If movie not in local database, return basic info
                     rating_history.append({
                         'movie_id': movie_id,
@@ -547,10 +512,8 @@ def api_rating_history():
                         'release_date': ''
                     })
         
-        print(f"Returning rating history: {rating_history}")
         return jsonify(rating_history)
     except Exception as e:
-        print(f"Error in rating-history endpoint: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/movie-details')
@@ -717,7 +680,6 @@ def api_reset_password():
         return jsonify({'message': 'Password updated successfully'})
         
     except Exception as e:
-        print(f"Password reset error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/forgot-password', methods=['POST'])
@@ -745,7 +707,6 @@ def api_forgot_password():
             return jsonify({'error': 'Invalid username or email'}), 400
         
     except Exception as e:
-        print(f"Forgot password error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/reset-password-with-token', methods=['POST'])
@@ -771,7 +732,6 @@ def api_reset_password_with_token():
             return jsonify({'error': 'Invalid or expired token'}), 400
         
     except Exception as e:
-        print(f"Reset password with token error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Legacy routes for backward compatibility

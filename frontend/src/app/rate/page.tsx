@@ -25,7 +25,6 @@ export default function RatePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Toast notification function
   const showToastNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);

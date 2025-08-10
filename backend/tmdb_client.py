@@ -47,7 +47,6 @@ class TMDBClient:
             return movies
             
         except requests.RequestException as e:
-            print(f"Error fetching popular movies: {e}")
             return self._get_sample_movies()
     
     def get_movie_details(self, movie_id: int) -> Optional[Dict]:
@@ -68,7 +67,6 @@ class TMDBClient:
             return response.json()
             
         except requests.RequestException as e:
-            print(f"Error fetching movie details: {e}")
             return None
     
     def search_movies(self, query: str, page: int = 1) -> Dict:
@@ -109,7 +107,6 @@ class TMDBClient:
             }
             
         except requests.RequestException as e:
-            print(f"Error searching movies: {e}")
             return {'movies': [], 'total_pages': 0, 'total_results': 0}
     
     def get_genres(self) -> Dict[int, str]:
@@ -131,7 +128,6 @@ class TMDBClient:
             return {genre['id']: genre['name'] for genre in data['genres']}
             
         except requests.RequestException as e:
-            print(f"Error fetching genres: {e}")
             return self._get_sample_genres()
     
     def _get_genre_names(self, genre_ids: List[int]) -> str:

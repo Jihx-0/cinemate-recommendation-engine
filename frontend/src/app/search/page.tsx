@@ -20,7 +20,6 @@ export default function SearchPage() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  // Modal state
   const [showMovieDetailsModal, setShowMovieDetailsModal] = useState(false);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [modalRating, setModalRating] = useState(0);
@@ -29,7 +28,6 @@ export default function SearchPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Toast notification function
   const showToastNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
@@ -42,7 +40,6 @@ export default function SearchPage() {
     enabled: !!query,
   });
 
-  // Fetch user ratings for displaying existing ratings
   const { data: userRatingsData, isLoading: isLoadingUserRatings } = useQuery({
     queryKey: ['user-ratings'],
     queryFn: async () => {
@@ -64,16 +61,13 @@ export default function SearchPage() {
 
   const userRatings = userRatingsData?.ratings || {};
 
-  // Effect to update modal rating when userRatingsData loads
   useEffect(() => {
     if (userRatingsData?.ratings && selectedMovie && !isLoadingUserRatings) {
       const existingRating = userRatingsData.ratings[selectedMovie.movie_id] || 0;
-      console.log('useEffect triggered - updating modal rating for movie:', selectedMovie.title, 'ID:', selectedMovie.movie_id, 'Rating:', existingRating);
       setModalRating(existingRating);
     }
   }, [userRatingsData, selectedMovie, isLoadingUserRatings]);
 
-  // Rating mutation
   const ratingMutation = useMutation({
     mutationFn: async ({ movieId, rating }: { movieId: number; rating: number }) => {
       const ratingsToSubmit: Record<string, number> = {};
@@ -94,12 +88,9 @@ export default function SearchPage() {
         }
       } : {};
       
-      console.log('Submitting rating:', { movieId, rating, movieDetails });
-      
       return moviesAPI.submitRatings(ratingsToSubmit, movieDetails);
     },
     onSuccess: (_, { movieId, rating }) => {
-      console.log('Rating submitted successfully:', { movieId, rating });
       // Invalidate and refetch relevant queries
       queryClient.invalidateQueries({ queryKey: ['user-stats'] });
       queryClient.invalidateQueries({ queryKey: ['rating-history'] });
@@ -148,11 +139,6 @@ export default function SearchPage() {
   };
 
   const openMovieModal = (movie: Movie, index: number) => {
-    console.log('Opening modal for movie:', movie.title, 'ID:', movie.movie_id);
-    console.log('Current userRatings:', userRatings);
-    console.log('Rating for this movie:', userRatings[movie.movie_id]);
-    console.log('isLoadingUserRatings:', isLoadingUserRatings);
-    
     setSelectedMovie(movie);
     setCurrentMovieIndex(index);
     // Set initial modal rating, but useEffect will update it when userRatings data loads
@@ -430,7 +416,6 @@ export default function SearchPage() {
                           <div className="flex items-center gap-1">
                             {[1, 2, 3, 4, 5].map((star) => {
                               const currentRating = modalRating > 0 ? modalRating : userRatings[selectedMovie.movie_id] || 0;
-                              console.log('Rendering star', star, 'for movie', selectedMovie.title, 'currentRating:', currentRating, 'modalRating:', modalRating, 'userRating:', userRatings[selectedMovie.movie_id]);
                               return (
                                 <button
                                   key={star}

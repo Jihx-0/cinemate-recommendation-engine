@@ -25,14 +25,12 @@ export default function RecommendationsPage() {
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
 
-  // Toast notification function
   const showToastNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000); // Hide after 3 seconds
   };
 
-  // Fetch recommendations
   const { data: recommendationsData, isLoading, error } = useQuery({
     queryKey: ['recommendations'],
     queryFn: moviesAPI.getRecommendations,
@@ -46,7 +44,6 @@ export default function RecommendationsPage() {
   // Get user's rated movies for display
   const ratedMovies = Object.keys(userRatings).map(id => parseInt(id));
 
-  // Fetch popular movies for movie data mapping
   const { data: popularMoviesData } = useQuery({
     queryKey: ['popular-movies'],
     queryFn: async () => {
@@ -56,7 +53,6 @@ export default function RecommendationsPage() {
     },
   });
 
-  // Fetch movie details for rated movies
   const { data: ratedMovieDetails } = useQuery({
     queryKey: ['movie-details', Object.keys(userRatings)],
     queryFn: async () => {
@@ -69,7 +65,6 @@ export default function RecommendationsPage() {
     enabled: Object.keys(userRatings).length > 0,
   });
 
-  // Create a movie data map
   const movieDataMap = useMemo(() => {
     const map = new Map();
     
@@ -92,7 +87,6 @@ export default function RecommendationsPage() {
 
   const popularMovies = popularMoviesData || [];
 
-  // Rating mutation
   const ratingMutation = useMutation({
     mutationFn: async ({ movieId, rating }: { movieId: number; rating: number }) => {
       const ratingsToSubmit: Record<string, number> = {};
@@ -192,7 +186,7 @@ export default function RecommendationsPage() {
           await navigator.share(shareData);
           return;
         } catch (error) {
-          console.log('Share cancelled or failed:', error);
+          // Share cancelled or failed
         }
       }
 
