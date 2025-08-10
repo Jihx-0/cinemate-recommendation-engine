@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/providers/auth-provider';
 import { ThemeSwitcher } from '@/components/theme-switcher';
 import { useTheme } from '@/providers/theme-provider';
+import { Search } from '@/components/search';
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -35,8 +36,9 @@ export function Navigation() {
   return (
     <nav className="sticky top-0 z-50 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 border-b border-gray-200">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 justify-between">
-          <div className="flex">
+        <div className="flex h-16 justify-between items-center gap-4">
+          {/* Logo and Navigation Links */}
+          <div className="flex items-center flex-shrink-0">
             <Link href="/" className="flex flex-shrink-0 items-center">
               <Film className="h-8 w-8 text-primary" />
               <span className="ml-2 text-xl font-bold text-gray-900">Cinemate</span>
@@ -54,7 +56,13 @@ export function Navigation() {
             </div>
           </div>
 
-          <div className="hidden sm:ml-6 sm:flex sm:items-center">
+          {/* Search Bar - Center positioned */}
+          <div className="flex-1 max-w-md mx-4 min-w-0 flex justify-center">
+            <Search className="w-full max-w-sm" />
+          </div>
+
+          {/* User Menu and Theme Switcher */}
+          <div className="hidden sm:ml-6 sm:flex sm:items-center flex-shrink-0">
             <ThemeSwitcher />
             {user ? (
               <div className="relative ml-4">
@@ -106,7 +114,8 @@ export function Navigation() {
             )}
           </div>
 
-          <div className="flex items-center sm:hidden">
+          {/* Mobile menu button */}
+          <div className="flex items-center sm:hidden flex-shrink-0">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-primary"
@@ -124,6 +133,11 @@ export function Navigation() {
 
       {/* Mobile menu */}
       <div className={cn('sm:hidden', isMenuOpen ? 'block' : 'hidden')}>
+        {/* Mobile Search Bar */}
+        <div className="px-4 py-3 border-b border-gray-200">
+          <Search className="w-full" />
+        </div>
+        
         <div className="space-y-1 pb-3 pt-2">
           {navigation.map((item) => (
             <Link
