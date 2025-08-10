@@ -23,6 +23,8 @@ export default function ProfilePage() {
   });
   const [passwordError, setPasswordError] = useState('');
   const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const ratingsPerPage = 10;
   const queryClient = useQueryClient();
 
   // Fetch user stats
@@ -39,45 +41,28 @@ export default function ProfilePage() {
     enabled: !!user,
   });
 
-  // Fetch movie details for rated movies
-  const { data: ratedMovieDetails } = useQuery({
-    queryKey: ['movie-details', ratingHistory ? Object.keys(ratingHistory) : []],
-    queryFn: async () => {
-      if (!ratingHistory || Object.keys(ratingHistory).length === 0) return [];
-      const movieIds = Object.keys(ratingHistory).join(',');
-      const response = await fetch(`/api/movie-details?ids=${movieIds}`);
-      if (!response.ok) throw new Error('Failed to fetch movie details');
-      return response.json();
-    },
-    enabled: !!ratingHistory && Object.keys(ratingHistory).length > 0,
-  });
-
   // Pre-populate ratings with existing user ratings
   useEffect(() => {
-    if (ratingHistory && Object.keys(ratingHistory).length > 0) {
-      setRatings(ratingHistory);
+    if (ratingHistory && Array.isArray(ratingHistory) && ratingHistory.length > 0) {
+      const ratingsMap: Record<number, number> = {};
+      ratingHistory.forEach((item: any) => {
+        ratingsMap[item.movie_id] = item.rating;
+      });
+      setRatings(ratingsMap);
     }
   }, [ratingHistory]);
 
   // Check for changes
   useEffect(() => {
-    if (ratingHistory) {
-      const hasAnyChanges = Object.keys(ratings).some(movieId => {
-        const currentRating = ratings[parseInt(movieId)];
-        const originalRating = ratingHistory[parseInt(movieId)];
-        return currentRating !== (originalRating as number);
+    if (ratingHistory && Array.isArray(ratingHistory)) {
+      const hasAnyChanges = ratingHistory.some((item: any) => {
+        const currentRating = ratings[item.movie_id];
+        const originalRating = item.rating;
+        return currentRating !== originalRating;
       });
       setHasChanges(hasAnyChanges);
     }
   }, [ratings, ratingHistory]);
-
-  // Create a map of movie IDs to movie details
-  const movieDataMap = new Map();
-  if (ratedMovieDetails) {
-    ratedMovieDetails.forEach((movie: any) => {
-      movieDataMap.set(movie.movie_id.toString(), movie);
-    });
-  }
 
   // Submit ratings mutation
   const submitRatingsMutation = useMutation({
@@ -412,25 +397,30 @@ export default function ProfilePage() {
                         <div key={i} className="h-12 animate-pulse bg-gray-200 rounded-lg" />
                       ))}
                     </div>
-                  ) : ratingHistory && Object.keys(ratingHistory).length > 0 ? (
+                  ) : ratingHistory && Array.isArray(ratingHistory) && ratingHistory.length > 0 ? (
                     <div className="space-y-4">
-                      {Object.entries(ratingHistory)
-                        .slice(0, 10)
-                        .map(([movieId, originalRating]) => {
-                          const movie = movieDataMap.get(movieId);
-                          const currentRating = ratings[parseInt(movieId)] || (originalRating as number);
-                          const hasChanged = currentRating !== (originalRating as number);
+                      {/* Pagination Info */}
+                      <div className="text-sm text-gray-600 text-center">
+                        Showing {((currentPage - 1) * ratingsPerPage) + 1} to {Math.min(currentPage * ratingsPerPage, ratingHistory.length)} of {ratingHistory.length} ratings
+                      </div>
+                      
+                      {/* Ratings List */}
+                      {ratingHistory
+                        .slice((currentPage - 1) * ratingsPerPage, currentPage * ratingsPerPage)
+                        .map((item: any) => {
+                          const currentRating = ratings[item.movie_id] || item.rating;
+                          const hasChanged = currentRating !== item.rating;
                           
                           return (
-                            <div key={movieId} className={`flex items-center justify-between p-3 rounded-lg ${
+                            <div key={item.movie_id} className={`flex items-center justify-between p-3 rounded-lg ${
                               hasChanged ? 'bg-yellow-50 border border-yellow-200' : 'bg-gray-50'
                             }`}>
                               <div>
-                                <p className="font-medium">{movie?.title || `Movie ID: ${movieId}`}</p>
+                                <p className="font-medium">{item.title || `Movie ${item.movie_id}`}</p>
                                 <p className="text-sm text-gray-600">Rated on {new Date().toLocaleDateString()}</p>
                                 {hasChanged && (
                                   <p className="text-xs text-yellow-600 mt-1">
-                                    Changed from {originalRating as number}★ to {currentRating}★
+                                    Changed from {item.rating}★ to {currentRating}★
                                   </p>
                                 )}
                               </div>
@@ -440,7 +430,7 @@ export default function ProfilePage() {
                                     <button
                                       key={star}
                                       type="button"
-                                      onClick={() => handleRatingChange(parseInt(movieId), star)}
+                                      onClick={() => handleRatingChange(item.movie_id, star)}
                                       className="transition-colors duration-200 hover:scale-110"
                                     >
                                       <Star
@@ -461,7 +451,7 @@ export default function ProfilePage() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => handleRemoveRating(parseInt(movieId))}
+                                  onClick={() => handleRemoveRating(item.movie_id)}
                                   disabled={removeRatingMutation.isPending}
                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                   title="Remove rating"
@@ -472,6 +462,33 @@ export default function ProfilePage() {
                             </div>
                           );
                         })}
+                      
+                      {/* Pagination Controls */}
+                      {ratingHistory.length > ratingsPerPage && (
+                        <div className="flex justify-center mt-6">
+                          <div className="flex space-x-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                              disabled={currentPage === 1}
+                            >
+                              Previous
+                            </Button>
+                            <span className="flex items-center px-4 py-2 text-sm text-gray-600">
+                              Page {currentPage} of {Math.ceil(ratingHistory.length / ratingsPerPage)}
+                            </span>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => setCurrentPage(Math.min(Math.ceil(ratingHistory.length / ratingsPerPage), currentPage + 1))}
+                              disabled={currentPage >= Math.ceil(ratingHistory.length / ratingsPerPage)}
+                            >
+                              Next
+                            </Button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div className="text-center py-8">
