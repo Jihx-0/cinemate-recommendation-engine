@@ -2,29 +2,25 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    // Forward cookies from the request to the backend
-    const cookieHeader = request.headers.get('cookie');
-    
-    const response = await fetch('http://localhost:5001/user', {
+    const response = await fetch('http://backend:5000/user', {
+      method: 'GET',
       headers: {
-        ...(cookieHeader && { 'Cookie': cookieHeader }),
+        'Content-Type': 'application/json',
       },
       credentials: 'include',
     });
 
-    const data = await response.json();
-    
-    const nextResponse = NextResponse.json(data, { status: response.status });
-    
-    // Copy cookies from backend response to frontend response
-    const setCookieHeader = response.headers.get('set-cookie');
-    if (setCookieHeader) {
-      nextResponse.headers.set('set-cookie', setCookieHeader);
+    if (!response.ok) {
+      throw new Error(`Backend responded with status: ${response.status}`);
     }
-    
-    return nextResponse;
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('User proxy error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching user:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch user' },
+      { status: 500 }
+    );
   }
 } 

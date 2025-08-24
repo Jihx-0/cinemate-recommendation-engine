@@ -3,13 +3,17 @@ import { NextRequest, NextResponse } from 'next/server';
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const ids = searchParams.get('ids');
+    const query = searchParams.get('q');
+    const page = searchParams.get('page') || '1';
 
-    if (!ids) {
-      return NextResponse.json({ error: 'Movie IDs are required' }, { status: 400 });
+    if (!query) {
+      return NextResponse.json(
+        { movies: [], page: parseInt(page), total_pages: 0, total_results: 0, query: '' },
+        { status: 400 }
+      );
     }
 
-    const response = await fetch(`http://backend:5000/api/movie-details?ids=${ids}`, {
+    const response = await fetch(`http://backend:5000/api/search-movies?q=${encodeURIComponent(query)}&page=${page}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -23,10 +27,10 @@ export async function GET(request: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (error) {
-    console.error('Error fetching movie details:', error);
+    console.error('Error searching movies:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch movie details' },
+      { error: 'Failed to search movies' },
       { status: 500 }
     );
   }
-} 
+}

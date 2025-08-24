@@ -2,13 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Forward cookies from the request to the backend
-    const cookieHeader = request.headers.get('cookie');
-    
-    const response = await fetch('http://localhost:5001/logout', {
+    const response = await fetch('http://backend:5000/logout', {
       method: 'POST',
       headers: {
-        ...(cookieHeader && { 'Cookie': cookieHeader }),
+        'Content-Type': 'application/json',
       },
       credentials: 'include',
     });
@@ -25,7 +22,7 @@ export async function POST(request: NextRequest) {
     
     return nextResponse;
   } catch (error) {
-    console.error('Logout proxy error:', error);
+    console.error('Logout error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 } 
