@@ -2,23 +2,27 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('http://localhost:5001/api/rate-movies', {
-      credentials: 'include',
+    const { searchParams } = new URL(request.url);
+    const page = searchParams.get('page') || '1';
+
+    const response = await fetch(`http://backend:5000/api/rate-movies?page=${page}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
-    const data = await response.json();
-    
-    const nextResponse = NextResponse.json(data, { status: response.status });
-    
-    // Copy cookies from backend response to frontend response
-    const setCookieHeader = response.headers.get('set-cookie');
-    if (setCookieHeader) {
-      nextResponse.headers.set('set-cookie', setCookieHeader);
+    if (!response.ok) {
+      throw new Error(`Backend responded with status: ${response.status}`);
     }
-    
-    return nextResponse;
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Rate movies proxy error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching rate movies:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch rate movies' },
+      { status: 500 }
+    );
   }
 } 

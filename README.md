@@ -58,11 +58,10 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ and npm
-- Python 3.8+
-- TMDb API key (free at [themoviedb.org](https://www.themoviedb.org/settings/api))
+- **Docker Desktop** - Required for running the application
+- **TMDb API key** - Free at [themoviedb.org](https://www.themoviedb.org/settings/api)
 
-### Installation
+### Quick Start
 
 1. **Clone the repository**
    ```bash
@@ -75,50 +74,29 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
    # Create .env file with your API keys:
    echo "TMDB_API_KEY=your_api_key_here" > .env
    echo "FLASK_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
-   echo "NEXT_PUBLIC_API_URL=http://localhost:5001" >> .env
    ```
    
    **Important**: Replace `your_api_key_here` with your actual TMDb API key from [themoviedb.org](https://www.themoviedb.org/settings/api)
 
-3. **Install dependencies**
+3. **Start the application**
    ```bash
-   # Install all dependencies (frontend and backend)
-   npm run install:all
-   ```
-
-4. **Start the development servers**
-   ```bash
-   # This starts both frontend and backend concurrently
-   npm run dev
-   ```
-
-5. **Open your browser**
-   Navigate to [http://localhost:3000](http://localhost:3000)
-
-## 🐳 Docker Setup (Alternative)
-
-Want to run Cinemate in containers? Cinemate has now been dockerized.
-
-### Quick Start with Docker
-
-1. **Make sure Docker Desktop is running**
-
-2. **Build and start all services in the proper directory**
-   ```bash
+   # Make sure Docker Desktop is running, then:
    docker-compose up --build
    ```
 
-3. **Access your application**
-   - **Frontend**: http://localhost:3000
-   - **Backend API**: http://localhost:5000
-   - **Health Check**: http://localhost:5000/health
+4. **Open your browser**
+   Navigate to [http://localhost:3000](http://localhost:3000)
+
+## 🐳 Docker Setup
+
+Cinemate is designed to run in Docker containers for consistent deployment across environments.
 
 ### Docker Services
 
 - **Backend**: Flask ML service with health checks
 - **Frontend**: React app with hot reloading
-- **Database**: SQLite database mounted from host
-- **Optional Redis**: For future caching enhancements
+- **Database**: SQLite database
+- **Redis**: For future caching enhancements
 
 ### Development with Docker
 
@@ -135,6 +113,12 @@ docker-compose down
 # Rebuild after code changes
 docker-compose up --build
 ```
+
+### Access Points
+
+- **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:5000
+- **Health Check**: http://localhost:5000/health
 
 ## 📁 Project Structure
 

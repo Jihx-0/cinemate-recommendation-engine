@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const API_BASE_URL = ''; // Use relative paths, let Next.js handle proxying
+// Use relative paths so API calls go to the same domain and get proxied by Next.js
+const API_BASE_URL = '';
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

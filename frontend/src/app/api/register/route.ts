@@ -4,10 +4,9 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Forward cookies from the request to the backend
     const cookieHeader = request.headers.get('cookie');
     
-    const response = await fetch('http://localhost:5001/register', {
+    const response = await fetch('http://backend:5000/register', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

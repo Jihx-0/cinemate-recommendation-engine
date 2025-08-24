@@ -4,14 +4,11 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     
-    // Forward cookies from the request to the backend
-    const cookieHeader = request.headers.get('cookie');
-    
-    const response = await fetch('http://localhost:5001/login', {
+    // Connect directly to backend container
+    const response = await fetch('http://backend:5000/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(cookieHeader && { 'Cookie': cookieHeader }),
       },
       body: JSON.stringify(body),
       credentials: 'include',
