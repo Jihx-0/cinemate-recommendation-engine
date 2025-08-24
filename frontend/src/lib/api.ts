@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = ''; // Use relative paths since Next.js handles proxying
+const API_BASE_URL = ''; // Use relative paths, let Next.js handle proxying
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

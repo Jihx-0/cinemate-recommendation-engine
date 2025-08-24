@@ -2,17 +2,17 @@
 
 A sophisticated movie recommendation system that combines content-based and collaborative filtering to deliver personalized movie suggestions. 
 
-Cinemate is a full-stack web application that helps users discover movies they'll love. Unlike simple recommendation systems, Cinemate uses advanced machine learning techniques to analyze both movie content and user behavior patterns, providing highly personalized recommendations.
+Cinemate is a full-stack web application that helps users discover movies they'll love. Unlike simple recommendation systems, Cinemate uses advanced machine learning techniques to analyze both movie content and user behavior patterns, providing personalized recommendations.
 
 ### Key Features
 
-- **🎯 Personalized Recommendations**: AI-powered suggestions based on your unique taste
-- **🧠 Content-Based Filtering**: Analyzes movie content using TF-IDF vectorization and cosine similarity
-- **👥 Collaborative Filtering**: Finds users with similar tastes and recommends what they enjoyed
-- **🔄 Hybrid Approach**: Combines both algorithms for superior recommendation quality
-- **📊 Real-time Learning**: Gets smarter as you rate more movies
-- **🎨 Modern UI/UX**: Responsive interface with smooth animations
-- **🔐 Secure Authentication**: User accounts with password validation and session management
+- **Personalized Recommendations**: AI-powered suggestions based on your unique taste
+- **Content-Based Filtering**: Analyzes movie content using TF-IDF vectorization and cosine similarity
+- **Collaborative Filtering**: Finds users with similar tastes and recommends what they enjoyed
+- **Hybrid Approach**: Combines both algorithms for superior recommendation quality
+- **Real-time Learning**: Gets smarter as you rate more movies
+- **Modern UI/UX**: Responsive interface with smooth animations
+- **Secure Authentication**: User accounts with password validation and session management
 
 ## 🛠 Tech Stack
 
@@ -95,26 +95,70 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
 5. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+## 🐳 Docker Setup (Alternative)
+
+Want to run Cinemate in containers? Cinemate has now been dockerized.
+
+### Quick Start with Docker
+
+1. **Make sure Docker Desktop is running**
+
+2. **Build and start all services in the proper directory**
+   ```bash
+   docker-compose up --build
+   ```
+
+3. **Access your application**
+   - **Frontend**: http://localhost:3000
+   - **Backend API**: http://localhost:5000
+   - **Health Check**: http://localhost:5000/health
+
+### Docker Services
+
+- **Backend**: Flask ML service with health checks
+- **Frontend**: React app with hot reloading
+- **Database**: SQLite database mounted from host
+- **Optional Redis**: For future caching enhancements
+
+### Development with Docker
+
+```bash
+# Start services in background
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+
+# Stop services
+docker-compose down
+
+# Rebuild after code changes
+docker-compose up --build
+```
+
 ## 📁 Project Structure
 
 ```
 Cinemate/
 ├── frontend/                 # React/Next.js frontend
 │   ├── src/
-│   │   ├── app/             # Next.js App Router pages
-│   │   ├── components/      # Reusable UI components
-│   │   ├── lib/            # Utilities and API clients
-│   │   └── providers/      # React context providers
+│   │   ├── app/              # Next.js App Router pages
+│   │   ├── components/       # Reusable UI components
+│   │   ├── lib/              # Utilities and API clients
+│   │   └── providers/        # React context providers
 │   └── package.json
 ├── backend/                 # Flask backend
-│   ├── app.py              # Main Flask application
-│   ├── user_system.py      # User management & ML algorithms
-│   ├── tmdb_client.py      # TMDb API integration
+│   ├── app.py               # Main Flask application
+│   ├── user_system.py       # User management & ML algorithms
+│   ├── tmdb_client.py       # TMDb API integration
 │   └── requirements.txt
 ├── .env                     # Environment variables
-├── .gitignore              # Git ignore rules
-├── package.json            # Root package.json with scripts
-└── README.md               # This file
+├── .gitignore               # Git ignore rules
+├── package.json             # Root package.json with scripts
+├── Dockerfile.backend       # Backend container config
+├── Dockerfile.frontend      # Frontend container config
+├── docker-compose.yml       # Docker compose file
+└── README.md                # Information
 ```
 
 ## 🎯 Features

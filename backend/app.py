@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from flask import Flask, request, redirect, session, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -26,10 +27,20 @@ CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
 tmdb_client = TMDBClient()
 
 # Init user system
-user_system = UserSystem(os.path.join(os.path.dirname(__file__), "..", "cinemate.db"))
+user_system = UserSystem("cinemate.db")
 
 # Global var to store movies
 movies_df = None
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Kubernetes"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'cinemate-backend',
+        'version': '1.0.0'
+    }), 200
 
 def load_movie_data():
     """Load movie data from TMDb API or fallback to sample data"""
@@ -751,4 +762,4 @@ def recommendations():
     return redirect('http://localhost:3000/recommendations')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001) 
+    app.run(debug=True, host='0.0.0.0', port=5000) 
