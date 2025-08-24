@@ -25,7 +25,6 @@ export default function RatePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // Toast notification function
   const showToastNotification = (message: string) => {
     setToastMessage(message);
     setShowToast(true);
@@ -43,40 +42,38 @@ export default function RatePage() {
   const currentPageNum = moviesData?.page || 1;
 
   // Fetch existing user ratings
-  const { data: existingRatings = {} } = useQuery({
+  const { data: ratingHistory = [], isLoading: isLoadingUserRatings } = useQuery({
     queryKey: ['user-ratings'],
     queryFn: async () => {
       const response = await fetch('/api/rating-history');
       if (!response.ok) throw new Error('Failed to fetch user ratings');
       const data = await response.json();
-      return data || {};
+      return data || [];
     },
     enabled: !!user,
   });
 
-  // Fetch movie details for rated movies
-  const { data: ratedMovieDetails } = useQuery({
-    queryKey: ['movie-details', Object.keys(existingRatings)],
-    queryFn: async () => {
-      if (Object.keys(existingRatings).length === 0) return [];
-      const movieIds = Object.keys(existingRatings).join(',');
-      const response = await fetch(`/api/movie-details?ids=${movieIds}`);
-      if (!response.ok) throw new Error('Failed to fetch movie details');
-      return response.json();
-    },
-    enabled: Object.keys(existingRatings).length > 0,
-  });
+  // Convert rating history array to ratings object for compatibility
+  const existingRatings = useMemo(() => {
+    const ratings: Record<number, number> = {};
+    if (Array.isArray(ratingHistory)) {
+      ratingHistory.forEach((item: any) => {
+        ratings[item.movie_id] = item.rating;
+      });
+    }
+    return ratings;
+  }, [ratingHistory]);
 
   // Create a movie data map for ratings display
   const movieDataMap = useMemo(() => {
     const map = new Map();
-    if (ratedMovieDetails) {
-      ratedMovieDetails.forEach((movie: any) => {
-        map.set(movie.movie_id.toString(), movie);
+    if (Array.isArray(ratingHistory)) {
+      ratingHistory.forEach((item: any) => {
+        map.set(item.movie_id.toString(), item);
       });
     }
     return map;
-  }, [ratedMovieDetails]);
+  }, [ratingHistory]);
 
   // Pre-populate ratings with existing user ratings
   useEffect(() => {
@@ -84,6 +81,10 @@ export default function RatePage() {
       setRatings(existingRatings);
     }
   }, [existingRatings]);
+
+  // Check if user has any ratings
+  const hasRatings = Object.keys(ratings).length > 0;
+  const hasExistingRatings = !isLoadingUserRatings && Array.isArray(ratingHistory) && ratingHistory.length > 0;
 
   // Submit ratings mutation
   const submitRatingsMutation = useMutation({
@@ -215,9 +216,6 @@ export default function RatePage() {
     setShowMovieDetailsModal(true);
   };
 
-  const hasRatings = Object.keys(ratings).length > 0;
-  const hasExistingRatings = Object.keys(existingRatings).length > 0;
-
   // Check if user is not logged in
   if (!user) {
     return (
@@ -330,7 +328,7 @@ export default function RatePage() {
             {hasExistingRatings && (
               <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
                 <p className="text-sm text-blue-800">
-                  💡 You have {Object.keys(existingRatings).length} existing ratings. You can modify them or add new ratings.
+                  💡 You have {ratingHistory.length} existing ratings. You can modify them or add new ratings.
                 </p>
               </div>
             )}
@@ -338,7 +336,7 @@ export default function RatePage() {
         </div>
 
         {/* User Ratings Summary */}
-        {Object.keys(existingRatings).length > 0 && (
+        {isLoadingUserRatings ? (
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -351,41 +349,58 @@ export default function RatePage() {
               </CardHeader>
               <CardContent>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                  {Object.entries(existingRatings).map(([movieId, rating]) => {
-                    const movie = movieDataMap.get(movieId);
-                    return (
-                      <div
-                        key={movieId}
-                        className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                      >
-                        <div className="flex-1 min-w-0">
-                          <span className="font-medium text-sm block truncate">
-                            {movie?.title || `Movie ID: ${movieId}`}
-                          </span>
-                          <div className="flex items-center gap-1 mt-1">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                className={`h-3 w-3 ${
-                                  i < (rating as number)
-                                    ? 'fill-yellow-400 text-yellow-400'
-                                    : 'text-gray-300'
-                                }`}
-                              />
-                            ))}
-                          </div>
+                  {[...Array(6)].map((_, i) => (
+                    <div key={i} className="h-16 animate-pulse bg-gray-200 rounded-lg" />
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </motion.div>
+        ) : hasExistingRatings && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mb-8"
+          >
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Ratings</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                  {Array.isArray(ratingHistory) && ratingHistory.map((item: any) => (
+                    <div
+                      key={item.movie_id}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+                    >
+                      <div className="flex-1 min-w-0">
+                        <span className="font-medium text-sm block truncate">
+                          {item.title || `Movie ID: ${item.movie_id}`}
+                        </span>
+                        <div className="flex items-center gap-1 mt-1">
+                          {[...Array(5)].map((_, i) => (
+                            <Star
+                              key={i}
+                              className={`h-3 w-3 ${
+                                i < item.rating
+                                  ? 'fill-yellow-400 text-yellow-400'
+                                  : 'text-gray-300'
+                              }`}
+                            />
+                          ))}
                         </div>
-                        <button
-                          onClick={() => removeRatingMutation.mutate(parseInt(movieId))}
-                          disabled={removeRatingMutation.isPending}
-                          className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
-                          title="Remove rating"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
                       </div>
-                    );
-                  })}
+                      <button
+                        onClick={() => removeRatingMutation.mutate(item.movie_id)}
+                        disabled={removeRatingMutation.isPending}
+                        className="ml-2 p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                        title="Remove rating"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
@@ -393,7 +408,7 @@ export default function RatePage() {
         )}
 
         {/* Movies Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {movies.map((movie: Movie, index: number) => (
             <motion.div
               key={movie.movie_id}
@@ -418,96 +433,29 @@ export default function RatePage() {
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            className="mt-8 flex justify-center"
-          >
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                disabled={currentPage <= 1}
-                size="sm"
-              >
-                Previous
-              </Button>
-              
-              <div className="flex items-center gap-1">
-                {(() => {
-                  const pages = [];
-                  
-                  if (totalPages <= 7) {
-                    // Show all pages for 7 or fewer
-                    for (let i = 1; i <= totalPages; i++) {
-                      pages.push(i);
-                    }
-                  } else {
-                    // Always show first page
-                    pages.push(1);
-                    
-                    if (currentPage <= 4) {
-                      // Near the beginning
-                      for (let i = 2; i <= Math.min(5, totalPages - 1); i++) {
-                        pages.push(i);
-                      }
-                      if (totalPages > 5) {
-                        pages.push('...');
-                        pages.push(totalPages);
-                      }
-                    } else if (currentPage >= totalPages - 3) {
-                      // Near the end
-                      pages.push('...');
-                      for (let i = Math.max(2, totalPages - 4); i < totalPages; i++) {
-                        pages.push(i);
-                      }
-                      pages.push(totalPages);
-                    } else {
-                      // In the middle
-                      pages.push('...');
-                      for (let i = currentPage - 1; i <= currentPage + 1; i++) {
-                        pages.push(i);
-                      }
-                      pages.push('...');
-                      pages.push(totalPages);
-                    }
-                  }
-                  
-                  return pages.map((page, index) => {
-                    if (page === '...') {
-                      return (
-                        <span key={`ellipsis-${index}`} className="px-2 text-gray-500">
-                          ...
-                        </span>
-                      );
-                    }
-                    
-                    return (
-                      <Button
-                        key={page}
-                        variant={currentPage === page ? "default" : "outline"}
-                        onClick={() => setCurrentPage(page as number)}
-                        size="sm"
-                        className="w-10 h-10"
-                      >
-                        {page}
-                      </Button>
-                    );
-                  });
-                })()}
-              </div>
-              
-              <Button
-                variant="outline"
-                onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                disabled={currentPage >= totalPages}
-                size="sm"
-              >
-                Next
-              </Button>
+          <div className="mt-8 flex justify-center">
+            <div className="flex space-x-2">
+              {currentPage > 1 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                >
+                  Previous
+                </Button>
+              )}
+              <span className="flex items-center px-4 py-2 text-sm text-gray-600">
+                Page {currentPage}
+              </span>
+              {currentPage < totalPages && (
+                <Button
+                  variant="outline"
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                >
+                  Next
+                </Button>
+              )}
             </div>
-          </motion.div>
+          </div>
         )}
 
         {/* Submit Button */}
@@ -533,7 +481,7 @@ export default function RatePage() {
                 <div className="space-y-4">
                   <p className="text-sm text-gray-600">
                     {hasExistingRatings 
-                      ? `You've updated ${Object.keys(ratings).length} ratings. Click below to view your recommendations!`
+                      ? `You've got ${ratingHistory.length} ratings. Click below to view your recommendations!`
                       : `You've rated ${Object.keys(ratings).length} movies. Click below to view your personalized recommendations!`
                     }
                   </p>
@@ -582,9 +530,9 @@ export default function RatePage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white rounded-lg max-w-2xl w-full"
+            className="bg-white rounded-lg max-w-3xl w-full h-[90vh] flex flex-col"
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {/* Backdrop Image */}
               {selectedMovie.backdrop_url && (
                 <div className="relative h-48 bg-gradient-to-b from-blue-900 to-blue-600">
@@ -595,6 +543,11 @@ export default function RatePage() {
                   />
                   <div className="absolute inset-0 bg-blue-900/40" />
                 </div>
+              )}
+              
+              {/* Light color bar when no backdrop */}
+              {!selectedMovie.backdrop_url && (
+                <div className="h-48 bg-gradient-to-b from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200" />
               )}
               
               {/* Close Button */}
@@ -626,7 +579,7 @@ export default function RatePage() {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 flex-1 overflow-y-auto">
               {/* Header */}
               <div className="flex items-start gap-4 mb-6">
                 {selectedMovie.poster_url && (
@@ -689,7 +642,6 @@ export default function RatePage() {
                           onClick={(e) => {
                             e.stopPropagation();
                             handleRatingChange(selectedMovie.movie_id, star);
-                            setShowMovieDetailsModal(false);
                           }}
                           className="transition-colors duration-200 hover:scale-110"
                         >

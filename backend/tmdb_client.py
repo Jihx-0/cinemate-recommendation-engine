@@ -47,7 +47,6 @@ class TMDBClient:
             return movies
             
         except requests.RequestException as e:
-            print(f"Error fetching popular movies: {e}")
             return self._get_sample_movies()
     
     def get_movie_details(self, movie_id: int) -> Optional[Dict]:
@@ -68,13 +67,12 @@ class TMDBClient:
             return response.json()
             
         except requests.RequestException as e:
-            print(f"Error fetching movie details: {e}")
             return None
     
-    def search_movies(self, query: str, page: int = 1) -> List[Dict]:
+    def search_movies(self, query: str, page: int = 1) -> Dict:
         """Search for movies by title"""
         if not self.api_key:
-            return []
+            return {'movies': [], 'total_pages': 0, 'total_results': 0}
         
         url = f"{self.base_url}/search/movie"
         params = {
@@ -97,15 +95,19 @@ class TMDBClient:
                     'overview': movie['overview'],
                     'genre': self._get_genre_names(movie.get('genre_ids', [])),
                     'poster_path': movie.get('poster_path'),
+                    'backdrop_path': movie.get('backdrop_path'),
                     'vote_average': movie.get('vote_average', 0),
                     'release_date': movie.get('release_date', '')
                 })
             
-            return movies
+            return {
+                'movies': movies,
+                'total_pages': data.get('total_pages', 0),
+                'total_results': data.get('total_results', 0)
+            }
             
         except requests.RequestException as e:
-            print(f"Error searching movies: {e}")
-            return []
+            return {'movies': [], 'total_pages': 0, 'total_results': 0}
     
     def get_genres(self) -> Dict[int, str]:
         """Get movie genres mapping"""
@@ -126,7 +128,6 @@ class TMDBClient:
             return {genre['id']: genre['name'] for genre in data['genres']}
             
         except requests.RequestException as e:
-            print(f"Error fetching genres: {e}")
             return self._get_sample_genres()
     
     def _get_genre_names(self, genre_ids: List[int]) -> str:

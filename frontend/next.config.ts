@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   images: {
+    unoptimized: true,
     remotePatterns: [
       {
         protocol: 'https',
@@ -15,23 +16,23 @@ const nextConfig: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5001/api/:path*',
+        destination: 'http://backend:5000/api/:path*',
       },
       {
         source: '/login',
-        destination: 'http://localhost:5001/login',
+        destination: 'http://backend:5000/login',
       },
       {
         source: '/register',
-        destination: 'http://localhost:5001/register',
+        destination: 'http://backend:5000/register',
       },
       {
         source: '/logout',
-        destination: 'http://localhost:5001/logout',
+        destination: 'http://backend:5000/logout',
       },
       {
         source: '/user',
-        destination: 'http://localhost:5001/user',
+        destination: 'http://backend:5000/user',
       },
     ];
   },

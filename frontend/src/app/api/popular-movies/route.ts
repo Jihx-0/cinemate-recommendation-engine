@@ -2,23 +2,24 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const response = await fetch('http://localhost:5001/api/popular-movies', {
-      credentials: 'include',
+    const response = await fetch('http://backend:5000/api/popular-movies', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
     });
 
-    const data = await response.json();
-    
-    const nextResponse = NextResponse.json(data, { status: response.status });
-    
-    // Copy cookies from backend response to frontend response
-    const setCookieHeader = response.headers.get('set-cookie');
-    if (setCookieHeader) {
-      nextResponse.headers.set('set-cookie', setCookieHeader);
+    if (!response.ok) {
+      throw new Error(`Backend responded with status: ${response.status}`);
     }
-    
-    return nextResponse;
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Popular movies proxy error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching popular movies:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch popular movies' },
+      { status: 500 }
+    );
   }
 } 

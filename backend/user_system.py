@@ -192,7 +192,6 @@ class UserSystem:
             
             return True
         except Exception as e:
-            print(f"Error updating password: {e}")
             return False
     
     def save_user_ratings(self, user_id: int, ratings: Dict[int, int]):
@@ -686,7 +685,6 @@ class UserSystem:
             return token
             
         except Exception as e:
-            print(f"Error generating reset token: {e}")
             return None
 
     def validate_reset_token(self, token: str) -> Optional[int]:
@@ -706,7 +704,6 @@ class UserSystem:
             return result[0] if result else None
             
         except Exception as e:
-            print(f"Error validating reset token: {e}")
             return None
 
     def use_reset_token(self, token: str) -> bool:
@@ -727,7 +724,6 @@ class UserSystem:
             return True
             
         except Exception as e:
-            print(f"Error using reset token: {e}")
             return False
 
     def reset_password_with_token(self, token: str, new_password: str) -> bool:
@@ -746,7 +742,6 @@ class UserSystem:
             return success
             
         except Exception as e:
-            print(f"Error resetting password with token: {e}")
             return False
 
 # Create global instance

@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
+from datetime import datetime
 from flask import Flask, request, redirect, session, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -26,10 +27,20 @@ CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
 tmdb_client = TMDBClient()
 
 # Init user system
-user_system = UserSystem("../cinemate.db")
+user_system = UserSystem("cinemate.db")
 
 # Global var to store movies
 movies_df = None
+
+@app.route('/health')
+def health_check():
+    """Health check endpoint for Kubernetes"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now().isoformat(),
+        'service': 'cinemate-backend',
+        'version': '1.0.0'
+    }), 200
 
 def load_movie_data():
     """Load movie data from TMDb API or fallback to sample data"""
@@ -201,6 +212,42 @@ def get_recommendations_for_user(user_id, n_recommendations=10):
     except Exception as e:
         return []
 
+def save_movie_to_local_db(movie_id: int, movie_data: dict):
+    """Save movie details to local database if it doesn't exist"""
+    global movies_df
+    
+    if movies_df is None:
+        return
+    
+    # Check if movie already exists in our database
+    if movie_id in movies_df['movie_id'].values:
+        return
+    
+    # Create new movie entry
+    new_movie = {
+        'movie_id': movie_id,
+        'title': movie_data.get('title', ''),
+        'overview': movie_data.get('overview', ''),
+        'genre': movie_data.get('genre', ''),
+        'poster_path': movie_data.get('poster_path'),
+        'backdrop_path': movie_data.get('backdrop_path'),
+        'vote_average': movie_data.get('vote_average', 0),
+        'release_date': movie_data.get('release_date', ''),
+        'poster_url': movie_data.get('poster_url'),
+        'backdrop_url': movie_data.get('backdrop_url')
+    }
+    
+    # Add to movies_df
+    new_movie_df = pd.DataFrame([new_movie])
+    movies_df = pd.concat([movies_df, new_movie_df], ignore_index=True)
+    
+    # Save to cache file
+    try:
+        # Save to current directory
+        movies_df.to_json("cached_movies.json", orient='records')
+    except Exception as e:
+        pass
+
 # API Routes for React Frontend
 @app.route('/api/popular-movies')
 def api_popular_movies():
@@ -229,13 +276,51 @@ def api_popular_movies():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/search-movies')
+def api_search_movies():
+    """API endpoint to search movies by title"""
+    try:
+        query = request.args.get('q', '').strip()
+        page = request.args.get('page', 1, type=int)
+        
+        if not query:
+            return jsonify({'movies': [], 'page': page, 'total_pages': 0, 'total_results': 0})
+        
+        # Search using TMDb API
+        search_data = tmdb_client.search_movies(query, page)
+        search_results = search_data.get('movies', [])
+        total_pages = search_data.get('total_pages', 0)
+        total_results = search_data.get('total_results', 0)
+        
+        # Add poster URLs to movies
+        for movie in search_results:
+            if movie.get('poster_path'):
+                movie['poster_url'] = tmdb_client.get_poster_url(movie['poster_path'])
+            else:
+                movie['poster_url'] = None
+            
+            if movie.get('backdrop_path'):
+                movie['backdrop_url'] = tmdb_client.get_backdrop_url(movie['backdrop_path'])
+            else:
+                movie['backdrop_url'] = None
+        
+        return jsonify({
+            'movies': search_results,
+            'page': page,
+            'total_pages': total_pages,
+            'total_results': total_results,
+            'query': query
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/rate-movies')
 def api_rate_movies():
     """API endpoint to get movies for rating with pagination"""
     try:
         # Get page parameter from query string
         page = request.args.get('page', 1, type=int)
-        movies_per_page = 21
+        movies_per_page = 20
         total_pages = 20
         total_movies_needed = movies_per_page * total_pages
         
@@ -296,14 +381,22 @@ def api_submit_ratings():
         
         data = request.get_json()
         ratings = data.get('ratings', {})
+        movie_details = data.get('movie_details', {})  # New field for movie details
         
         user_id = session['user_id']
         
-        # Process ratings
-        for rating_key, rating_value in ratings.items():
-            if rating_key.startswith('rating_'):
-                movie_id = int(rating_key.replace('rating_', ''))
-                user_system.add_rating(user_id, movie_id, rating_value)
+        for key, value in ratings.items():
+            if key.startswith('rating_'):
+                movie_id = int(key.replace('rating_', ''))
+                rating_value = int(value)
+                
+                if movie_details and str(movie_id) in movie_details:
+                    save_movie_to_local_db(movie_id, movie_details[str(movie_id)])
+                
+                try:
+                    user_system.add_rating(user_id, movie_id, rating_value)
+                except Exception as e:
+                    return jsonify({'error': f'Failed to save rating: {str(e)}'}), 500
         
         return jsonify({'message': 'Ratings submitted successfully'})
     except Exception as e:
@@ -333,7 +426,6 @@ def api_remove_rating():
         
         return jsonify({'message': 'Rating removed successfully', 'movie_id': movie_id})
     except Exception as e:
-        print(f"Error in remove-rating endpoint: {e}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/recommendations')
@@ -399,7 +491,39 @@ def api_rating_history():
         user_id = session['user_id']
         ratings = user_system.get_user_ratings(user_id)
         
-        return jsonify(ratings)
+        # Get movie details for the rated movies
+        rating_history = []
+        if ratings and movies_df is not None:
+            for movie_id, rating in ratings.items():
+                movie_data = movies_df[movies_df['movie_id'] == movie_id]
+                if not movie_data.empty:
+                    movie_info = movie_data.iloc[0].to_dict()
+                    rating_history.append({
+                        'movie_id': movie_id,
+                        'rating': rating,
+                        'title': movie_info.get('title', f'Movie {movie_id}'),
+                        'overview': movie_info.get('overview', ''),
+                        'genre': movie_info.get('genre', ''),
+                        'poster_url': movie_info.get('poster_url'),
+                        'backdrop_url': movie_info.get('backdrop_url'),
+                        'vote_average': movie_info.get('vote_average', 0),
+                        'release_date': movie_info.get('release_date', '')
+                    })
+                else:
+                    # If movie not in local database, return basic info
+                    rating_history.append({
+                        'movie_id': movie_id,
+                        'rating': rating,
+                        'title': f'Movie {movie_id}',
+                        'overview': '',
+                        'genre': '',
+                        'poster_url': None,
+                        'backdrop_url': None,
+                        'vote_average': 0,
+                        'release_date': ''
+                    })
+        
+        return jsonify(rating_history)
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -567,7 +691,6 @@ def api_reset_password():
         return jsonify({'message': 'Password updated successfully'})
         
     except Exception as e:
-        print(f"Password reset error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/forgot-password', methods=['POST'])
@@ -595,7 +718,6 @@ def api_forgot_password():
             return jsonify({'error': 'Invalid username or email'}), 400
         
     except Exception as e:
-        print(f"Forgot password error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 @app.route('/api/reset-password-with-token', methods=['POST'])
@@ -621,7 +743,6 @@ def api_reset_password_with_token():
             return jsonify({'error': 'Invalid or expired token'}), 400
         
     except Exception as e:
-        print(f"Reset password with token error: {e}")
         return jsonify({'error': 'Internal server error'}), 500
 
 # Legacy routes for backward compatibility
@@ -641,4 +762,4 @@ def recommendations():
     return redirect('http://localhost:3000/recommendations')
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5001) 
+    app.run(debug=True, host='0.0.0.0', port=5000) 

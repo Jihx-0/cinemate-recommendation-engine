@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = ''; // Use relative paths since Next.js handles proxying
+const API_BASE_URL = ''; // Use relative paths, let Next.js handle proxying
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -89,13 +89,27 @@ export const moviesAPI = {
     }
   },
 
+  async searchMovies(query: string, page: number = 1): Promise<{movies: Movie[], page: number, total_pages: number, total_results: number, query: string}> {
+    try {
+      const response = await api.get(`/api/search-movies?q=${encodeURIComponent(query)}&page=${page}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error searching movies:', error);
+      return { movies: [], page, total_pages: 0, total_results: 0, query };
+    }
+  },
+
   getRateMovies: async (page: number = 1) => {
     const response = await api.get(`/api/rate-movies?page=${page}`);
     return response.data;
   },
 
-  submitRatings: async (ratings: Record<string, number>) => {
-    const response = await api.post('/api/submit-ratings', { ratings });
+  submitRatings: async (ratings: Record<string, number>, movieDetails?: Record<string, any>) => {
+    const payload: any = { ratings };
+    if (movieDetails) {
+      payload.movie_details = movieDetails;
+    }
+    const response = await api.post('/api/submit-ratings', payload);
     return response.data;
   },
 

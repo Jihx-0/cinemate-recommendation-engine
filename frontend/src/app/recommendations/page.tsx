@@ -22,8 +22,15 @@ export default function RecommendationsPage() {
   const [modalRating, setModalRating] = useState(0);
   const [isRatingLoading, setIsRatingLoading] = useState(false);
   const [currentMovieIndex, setCurrentMovieIndex] = useState(0);
+  const [showToast, setShowToast] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
-  // Fetch recommendations
+  const showToastNotification = (message: string) => {
+    setToastMessage(message);
+    setShowToast(true);
+    setTimeout(() => setShowToast(false), 3000); // Hide after 3 seconds
+  };
+
   const { data: recommendationsData, isLoading, error } = useQuery({
     queryKey: ['recommendations'],
     queryFn: moviesAPI.getRecommendations,
@@ -37,7 +44,6 @@ export default function RecommendationsPage() {
   // Get user's rated movies for display
   const ratedMovies = Object.keys(userRatings).map(id => parseInt(id));
 
-  // Fetch popular movies for movie data mapping
   const { data: popularMoviesData } = useQuery({
     queryKey: ['popular-movies'],
     queryFn: async () => {
@@ -47,7 +53,6 @@ export default function RecommendationsPage() {
     },
   });
 
-  // Fetch movie details for rated movies
   const { data: ratedMovieDetails } = useQuery({
     queryKey: ['movie-details', Object.keys(userRatings)],
     queryFn: async () => {
@@ -60,7 +65,6 @@ export default function RecommendationsPage() {
     enabled: Object.keys(userRatings).length > 0,
   });
 
-  // Create a movie data map
   const movieDataMap = useMemo(() => {
     const map = new Map();
     
@@ -83,29 +87,28 @@ export default function RecommendationsPage() {
 
   const popularMovies = popularMoviesData || [];
 
-  // Rating mutation
   const ratingMutation = useMutation({
     mutationFn: async ({ movieId, rating }: { movieId: number; rating: number }) => {
       const ratingsToSubmit: Record<string, number> = {};
       ratingsToSubmit[`rating_${movieId}`] = rating;
       return moviesAPI.submitRatings(ratingsToSubmit);
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       // Invalidate and refetch recommendations to remove the rated movie
       queryClient.invalidateQueries({ queryKey: ['recommendations'] });
       queryClient.invalidateQueries({ queryKey: ['user-stats'] });
       queryClient.invalidateQueries({ queryKey: ['rating-history'] });
       queryClient.invalidateQueries({ queryKey: ['user-ratings'] });
       
-      // Close modal and reset state
-      setShowMovieDetailsModal(false);
-      setSelectedMovie(null);
-      setModalRating(0);
+      // Update local state immediately for better UX
+      setModalRating(variables.rating);
       setIsRatingLoading(false);
+      showToastNotification('Rating saved!');
     },
     onError: (error) => {
       console.error('Error rating movie:', error);
       setIsRatingLoading(false);
+      showToastNotification('Failed to save rating.');
     },
   });
 
@@ -183,7 +186,7 @@ export default function RecommendationsPage() {
           await navigator.share(shareData);
           return;
         } catch (error) {
-          console.log('Share cancelled or failed:', error);
+          // Share cancelled or failed
         }
       }
 
@@ -307,7 +310,7 @@ export default function RecommendationsPage() {
         </div>
 
         {/* Recommendations Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           {recommendations.map((recommendation: Recommendation, index: number) => {
             const TypeIcon = getRecommendationTypeIcon(recommendation.type);
             
@@ -387,9 +390,9 @@ export default function RecommendationsPage() {
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.9 }}
-            className="bg-white rounded-lg max-w-2xl w-full"
+            className="bg-white rounded-lg max-w-3xl w-full h-[90vh] flex flex-col"
           >
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {/* Backdrop Image */}
               {selectedMovie.backdrop_url && (
                 <div className="relative h-48 bg-gradient-to-b from-gray-900 to-gray-600">
@@ -400,6 +403,11 @@ export default function RecommendationsPage() {
                   />
                   <div className="absolute inset-0 bg-black/40" />
                 </div>
+              )}
+              
+              {/* Light color bar when no backdrop */}
+              {!selectedMovie.backdrop_url && (
+                <div className="h-48 bg-gradient-to-b from-gray-50 to-gray-100 rounded-t-lg border-b border-gray-200" />
               )}
               
               {/* Close Button */}
@@ -431,7 +439,7 @@ export default function RecommendationsPage() {
               </div>
             </div>
 
-            <div className="p-6">
+            <div className="p-6 flex-1 overflow-y-auto">
               {/* Header */}
               <div className="flex items-start gap-4 mb-6">
                 {selectedMovie.poster_url && (
@@ -582,6 +590,19 @@ export default function RecommendationsPage() {
             </div>
           </motion.div>
         </div>
+      )}
+
+      {/* Toast Notification */}
+      {showToast && (
+        <motion.div
+          initial={{ opacity: 0, y: -50, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -50, scale: 0.8 }}
+          className="fixed top-4 right-4 z-50 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg flex items-center gap-2"
+        >
+          <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+          <span className="font-medium">{toastMessage}</span>
+        </motion.div>
       )}
     </div>
   );
