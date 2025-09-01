@@ -38,8 +38,7 @@ const nextConfig: NextConfig = {
   },
   // Disable development tools
   devIndicators: {
-    buildActivity: false,
-    buildActivityPosition: 'bottom-right',
+    position: 'bottom-right',
   },
 };
 

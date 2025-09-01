@@ -74,8 +74,13 @@ export const authAPI = {
   },
 
   getCurrentUser: async () => {
-    const response = await api.get('/api/user');
-    return response.data;
+    try {
+      const response = await api.get('/api/user');
+      return response.data;
+    } catch (error) {
+      // Return null if user is not authenticated
+      return null;
+    }
   },
 };
 

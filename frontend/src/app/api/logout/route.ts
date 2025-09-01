@@ -2,10 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
+    const cookieHeader = request.headers.get('cookie');
+    
     const response = await fetch('http://backend:5000/logout', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(cookieHeader && { 'Cookie': cookieHeader }),
       },
       credentials: 'include',
     });

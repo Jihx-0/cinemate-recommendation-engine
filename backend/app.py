@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import numpy as np
-from datetime import datetime
+from datetime import datetime, timedelta
 from flask import Flask, request, redirect, session, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -17,11 +17,12 @@ app.secret_key = os.getenv('FLASK_SECRET_KEY', 'your-secret-key-here')
 # Configure session
 app.config['SESSION_COOKIE_SECURE'] = False  # Set to True in production with HTTPS
 app.config['SESSION_COOKIE_HTTPONLY'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'  # Use Lax for development, None for production with HTTPS
 app.config['SESSION_COOKIE_DOMAIN'] = None  # Allow cross-subdomain cookies
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(days=7)  # Session expires in 7 days
 
 # Enable CORS for React frontend
-CORS(app, supports_credentials=True, origins=['http://localhost:3000'])
+CORS(app, supports_credentials=True, origins=['http://localhost:3000', 'http://frontend:3000'])
 
 # Init TMDB client
 tmdb_client = TMDBClient()
@@ -267,6 +268,15 @@ def api_popular_movies():
             popular_movies = movies_df.sample(n=12, random_state=seed_base).to_dict('records')
         else:
             popular_movies = movies_df.to_dict('records')
+        
+        # Clean NaN values from the response
+        import math
+        for movie in popular_movies:
+            for key, value in movie.items():
+                if isinstance(value, float) and math.isnan(value):
+                    movie[key] = None
+                elif isinstance(value, str) and value.lower() == 'nan':
+                    movie[key] = None
         
         response = jsonify(popular_movies)
         response.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate'
@@ -570,6 +580,7 @@ def api_login():
         
         if user_id:
             session['user_id'] = user_id
+            session.permanent = True  # Make session permanent
             user = user_system.get_user_by_id(user_id)
             return jsonify({'message': 'Login successful', 'user': user})
         else:
@@ -624,6 +635,7 @@ def api_register():
         
         if user_id:
             session['user_id'] = user_id
+            session.permanent = True  # Make session permanent
             user = user_system.get_user_by_id(user_id)
             return jsonify({'message': 'Registration successful', 'user': user})
         else:
