@@ -5,8 +5,8 @@ A sophisticated movie recommendation system that combines content-based and coll
 Cinemate is a full-stack web application that helps users discover movies they'll love. Unlike simple recommendation systems, Cinemate uses advanced machine learning techniques to analyze both movie content and user behavior patterns, providing personalized recommendations.
 
 ### Version History
-- **v1.1.0 - Grafana/Prometheus Observability
-- **v1.0.0 - Initial Release - (main)
+- v1.1.0 - Grafana/Prometheus Observability
+- v1.0.0 - Initial Release - (main)
 
 ### Key Features
 
