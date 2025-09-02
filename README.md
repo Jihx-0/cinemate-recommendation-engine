@@ -13,6 +13,7 @@ Cinemate is a full-stack web application that helps users discover movies they'l
 - **Real-time Learning**: Gets smarter as you rate more movies
 - **Modern UI/UX**: Responsive interface with smooth animations
 - **Secure Authentication**: User accounts with password validation and session management
+- **Production Monitoring**: Complete observability with Grafana dashboards and Prometheus metrics
 
 ## 🛠 Tech Stack
 
@@ -34,6 +35,14 @@ Cinemate is a full-stack web application that helps users discover movies they'l
 - **SQLite** - Lightweight database
 - **TMDb API** - Movie data source
 - **Flask-CORS** - Cross-origin resource sharing
+- **Prometheus Client** - Metrics collection and monitoring
+
+### Monitoring & Observability
+- **Prometheus** - Metrics collection and time-series database
+- **Grafana** - Visualization and dashboard platform
+- **cAdvisor** - Container resource monitoring
+- **Redis Exporter** - Cache performance metrics
+- **Custom Metrics** - Application-specific performance tracking
 
 ## 🧠 AI/ML Features
 
@@ -73,10 +82,12 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
    ```bash
    # Create .env file with your API keys:
    echo "TMDB_API_KEY=your_api_key_here" > .env
-   echo "FLASK_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+   echo "FLASK_SECRET_KEY=your_secret_key_here" >> .env
    ```
    
-   **Important**: Replace `your_api_key_here` with your actual TMDb API key from [themoviedb.org](https://www.themoviedb.org/settings/api)
+   **Important**: 
+   - Replace `your_api_key_here` with your actual TMDb API key from [themoviedb.org](https://www.themoviedb.org/settings/api)
+   - Replace `your_secret_key_here` with a random 32-character string (or use: `openssl rand -hex 32`)
 
 3. **Start the application**
    ```bash
@@ -87,16 +98,25 @@ Cinemate uses advanced machine learning algorithms to deliver personalized recom
 4. **Open your browser**
    Navigate to [http://localhost:3000](http://localhost:3000)
 
+5. **Access monitoring dashboards** (optional)
+   - **Grafana Dashboard**: [http://localhost:3001](http://localhost:3001) (admin/admin)
+   - **Public Dashboard**: [http://localhost:3001/public-dashboards/cinemate-public-token](http://localhost:3001/public-dashboards/cinemate-public-token)
+   - **Prometheus Metrics**: [http://localhost:9090](http://localhost:9090)
+
 ## 🐳 Docker Setup
 
 Cinemate is designed to run in Docker containers for consistent deployment across environments.
 
 ### Docker Services
 
-- **Backend**: Flask ML service with health checks
+- **Backend**: Flask ML service with health checks and metrics
 - **Frontend**: React app with hot reloading
 - **Database**: SQLite database
-- **Redis**: For future caching enhancements
+- **Redis**: Caching and session storage
+- **Prometheus**: Metrics collection and storage
+- **Grafana**: Monitoring dashboards and visualization
+- **cAdvisor**: Container resource monitoring
+- **Redis Exporter**: Cache performance metrics
 
 ### Development with Docker
 
@@ -119,23 +139,30 @@ docker-compose up --build
 - **Frontend**: http://localhost:3000
 - **Backend API**: http://localhost:5000
 - **Health Check**: http://localhost:5000/health
+- **Grafana Dashboard**: http://localhost:3001 (admin/admin)
+- **Prometheus Metrics**: http://localhost:9090
+- **Public Dashboard**: http://localhost:3001/public-dashboards/cinemate-public-token
 
 ## 📁 Project Structure
 
 ```
 Cinemate/
-├── frontend/                 # React/Next.js frontend
+├── frontend/                # React/Next.js frontend
 │   ├── src/
-│   │   ├── app/              # Next.js App Router pages
-│   │   ├── components/       # Reusable UI components
-│   │   ├── lib/              # Utilities and API clients
-│   │   └── providers/        # React context providers
+│   │   ├── app/             # Next.js App Router pages
+│   │   ├── components/      # Reusable UI components
+│   │   ├── lib/             # Utilities and API clients
+│   │   └── providers/       # React context providers
 │   └── package.json
 ├── backend/                 # Flask backend
 │   ├── app.py               # Main Flask application
 │   ├── user_system.py       # User management & ML algorithms
 │   ├── tmdb_client.py       # TMDb API integration
 │   └── requirements.txt
+├── grafana/                 # Grafana configuration
+│   ├── dashboards/          # Dashboard definitions
+│   └── provisioning/        # Data sources and dashboard provisioning
+├── prometheus.yml           # Prometheus configuration
 ├── .env                     # Environment variables
 ├── .gitignore               # Git ignore rules
 ├── package.json             # Root package.json with scripts
@@ -171,6 +198,78 @@ Cinemate/
 - **Smooth Animations**: Framer Motion powered transitions
 - **Modern UI**: Clean, professional interface
 
+### Monitoring & Observability
+- **Real-time Metrics**: Track API performance, response times, and error rates
+- **ML Algorithm Monitoring**: Monitor recommendation generation times and accuracy
+- **User Activity Tracking**: Track user registrations, ratings, and engagement
+- **Container Resource Monitoring**: CPU, memory, and network usage
+- **Cache Performance**: Redis hit rates and performance metrics
+- **Custom Dashboards**: Pre-built Grafana dashboards for comprehensive monitoring
+- **Public Dashboard Access**: Share monitoring data without authentication
+
+## 📊 Monitoring & Observability
+
+Cinemate includes a comprehensive monitoring stack built with industry-standard tools:
+
+### What's Monitored
+
+- **API Performance**: Request counts, response times, error rates
+- **ML Algorithm Performance**: Recommendation generation times for both content-based and collaborative filtering
+- **User Activity**: Registrations, ratings, searches, active users
+- **System Resources**: CPU, memory, disk usage, network I/O
+- **Cache Performance**: Redis hit rates, connection counts, memory usage
+- **Database Operations**: Query performance and operation counts
+
+### Monitoring Stack
+
+- **Prometheus**: Collects and stores metrics from all services
+- **Grafana**: Provides beautiful dashboards and visualizations
+- **cAdvisor**: Monitors container resource usage
+- **Redis Exporter**: Tracks cache performance metrics
+- **Custom Metrics**: Application-specific performance tracking
+
+### Dashboard Features
+
+- **Real-time Monitoring**: Live updates of all metrics
+- **Historical Analysis**: Trend analysis and performance over time
+- **Alerting Ready**: Built-in support for Prometheus alerting rules
+- **Public Access**: Share monitoring data without authentication
+- **Mobile Responsive**: Dashboards work on all devices
+
+### Accessing Monitoring
+
+1. **Grafana Dashboard**: http://localhost:3001 (admin/admin)
+2. **Public Dashboard**: http://localhost:3001/public-dashboards/cinemate-public-token
+3. **Prometheus UI**: http://localhost:9090
+4. **Raw Metrics**: http://localhost:5000/metrics (backend metrics)
+
+### Troubleshooting
+
+**Common Issues:**
+
+1. **Port conflicts**: If you get "port already in use" errors, make sure no other services are running on ports 3000, 3001, 5000, 6379, 8080, 9090, or 9121.
+
+2. **Docker not running**: Make sure Docker Desktop is running before executing `docker-compose up --build`.
+
+3. **Environment variables**: Ensure your `.env` file is in the project root and contains valid values for `TMDB_API_KEY` and `FLASK_SECRET_KEY`.
+
+4. **Slow startup**: First-time startup may take 2-3 minutes as Docker downloads images and builds containers.
+
+**Useful Commands:**
+```bash
+# Check service status
+docker-compose ps
+
+# View logs
+docker-compose logs -f [service-name]
+
+# Restart services
+docker-compose restart
+
+# Clean restart (removes volumes)
+docker-compose down -v && docker-compose up --build
+```
+
 ## ⚠️ Limitations
 
 - **Data Source Size Impact**: The current implementation uses ~1,000 movies from TMDb's popular movies API. Larger datasets (10,000+ movies) would significantly improve recommendation accuracy by providing more diverse content vectors for TF-IDF analysis.
@@ -203,3 +302,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Scikit-learn**: Machine learning algorithms
 - **React & Next.js**: Frontend framework
 - **Flask**: Backend framework
+- **Prometheus**: Metrics collection and monitoring
+- **Grafana**: Dashboard and visualization platform
+- **cAdvisor**: Container monitoring
+- **Redis**: Caching and session storage
