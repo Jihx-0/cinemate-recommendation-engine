@@ -17,7 +17,16 @@ export async function GET(request: NextRequest) {
     }
 
     const data = await response.json();
-    return NextResponse.json(data);
+    
+    // Clean any potential NaN values that might slip through
+    const cleanData = JSON.parse(JSON.stringify(data, (key, value) => {
+      if (typeof value === 'number' && isNaN(value)) {
+        return null;
+      }
+      return value;
+    }));
+    
+    return NextResponse.json(cleanData);
   } catch (error) {
     console.error('Error fetching rate movies:', error);
     return NextResponse.json(

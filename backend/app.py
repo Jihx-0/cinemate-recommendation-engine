@@ -7,6 +7,8 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 from tmdb_client import TMDBClient
 from user_system import UserSystem
+from prometheus_client import Counter, Histogram, Gauge, generate_latest, CONTENT_TYPE_LATEST
+import time
 
 # Load .env file
 load_dotenv('../.env')
@@ -33,6 +35,17 @@ user_system = UserSystem("cinemate.db")
 # Global var to store movies
 movies_df = None
 
+# Prometheus metrics
+REQUEST_COUNT = Counter('cinemate_requests_total', 'Total requests', ['method', 'endpoint', 'status'])
+REQUEST_DURATION = Histogram('cinemate_request_duration_seconds', 'Request duration', ['method', 'endpoint'])
+RECOMMENDATION_DURATION = Histogram('cinemate_recommendation_duration_seconds', 'Recommendation generation duration', ['algorithm'])
+RECOMMENDATION_COUNT = Counter('cinemate_recommendations_total', 'Total recommendations generated', ['algorithm'])
+USER_RATINGS_COUNT = Counter('cinemate_user_ratings_total', 'Total user ratings submitted')
+ACTIVE_USERS = Gauge('cinemate_active_users', 'Number of active users')
+MOVIE_SEARCH_COUNT = Counter('cinemate_movie_searches_total', 'Total movie searches')
+DATABASE_OPERATIONS = Counter('cinemate_database_operations_total', 'Database operations', ['operation'])
+ML_OPERATION_DURATION = Histogram('cinemate_ml_operation_duration_seconds', 'ML operation duration', ['operation'])
+
 @app.route('/health')
 def health_check():
     """Health check endpoint for Kubernetes"""
@@ -42,6 +55,35 @@ def health_check():
         'service': 'cinemate-backend',
         'version': '1.0.0'
     }), 200
+
+@app.route('/metrics')
+def metrics():
+    """Prometheus metrics endpoint"""
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+
+def track_request_metrics(f):
+    """Decorator to track request metrics"""
+    def decorated_function(*args, **kwargs):
+        start_time = time.time()
+        endpoint = request.endpoint or 'unknown'
+        method = request.method
+        
+        try:
+            response = f(*args, **kwargs)
+            status = 'success'
+            if hasattr(response, 'status_code'):
+                status = 'success' if response.status_code < 400 else 'error'
+            return response
+        except Exception as e:
+            status = 'error'
+            raise
+        finally:
+            duration = time.time() - start_time
+            REQUEST_DURATION.labels(method=method, endpoint=endpoint).observe(duration)
+            REQUEST_COUNT.labels(method=method, endpoint=endpoint, status=status).inc()
+    
+    decorated_function.__name__ = f.__name__
+    return decorated_function
 
 def load_movie_data():
     """Load movie data from TMDb API or fallback to sample data"""
@@ -132,6 +174,7 @@ load_movie_data()
 
 def get_recommendations_for_user(user_id, n_recommendations=10):
     """Get personalized recommendations using machine learning"""
+    start_time = time.time()
     try:
         # Get user's ratings
         user_ratings = user_system.get_user_ratings(user_id)
@@ -151,11 +194,19 @@ def get_recommendations_for_user(user_id, n_recommendations=10):
             return []
         
         # Get content-based recommendations
+        content_start = time.time()
         content_recommendations = user_system.get_content_based_recommendations(user_id, n_recommendations, available_movie_ids, movies_df)
+        content_duration = time.time() - content_start
+        RECOMMENDATION_DURATION.labels(algorithm='content-based').observe(content_duration)
+        RECOMMENDATION_COUNT.labels(algorithm='content-based').inc(len(content_recommendations))
         
         # Try collaborative filtering too
         try:
+            collab_start = time.time()
             collaborative_recommendations = user_system.get_collaborative_recommendations(user_id, n_recommendations, available_movie_ids)
+            collab_duration = time.time() - collab_start
+            RECOMMENDATION_DURATION.labels(algorithm='collaborative').observe(collab_duration)
+            RECOMMENDATION_COUNT.labels(algorithm='collaborative').inc(len(collaborative_recommendations))
         except Exception as e:
             collaborative_recommendations = []
         
@@ -251,6 +302,7 @@ def save_movie_to_local_db(movie_id: int, movie_data: dict):
 
 # API Routes for React Frontend
 @app.route('/api/popular-movies')
+@track_request_metrics
 def api_popular_movies():
     """API endpoint to get popular movies for homepage"""
     try:
@@ -287,6 +339,7 @@ def api_popular_movies():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/search-movies')
+@track_request_metrics
 def api_search_movies():
     """API endpoint to search movies by title"""
     try:
@@ -295,6 +348,9 @@ def api_search_movies():
         
         if not query:
             return jsonify({'movies': [], 'page': page, 'total_pages': 0, 'total_results': 0})
+        
+        # Track movie searches
+        MOVIE_SEARCH_COUNT.inc()
         
         # Search using TMDb API
         search_data = tmdb_client.search_movies(query, page)
@@ -372,6 +428,15 @@ def api_rate_movies():
         else:
             page_movies = []
         
+        # Clean NaN values from the response
+        import math
+        for movie in page_movies:
+            for key, value in movie.items():
+                if isinstance(value, float) and math.isnan(value):
+                    movie[key] = None
+                elif isinstance(value, str) and value.lower() == 'nan':
+                    movie[key] = None
+        
         return jsonify({
             'movies': page_movies,
             'page': page,
@@ -383,6 +448,7 @@ def api_rate_movies():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/submit-ratings', methods=['POST'])
+@track_request_metrics
 def api_submit_ratings():
     """API endpoint to submit user ratings"""
     try:
@@ -405,6 +471,8 @@ def api_submit_ratings():
                 
                 try:
                     user_system.add_rating(user_id, movie_id, rating_value)
+                    USER_RATINGS_COUNT.inc()
+                    DATABASE_OPERATIONS.labels(operation='add_rating').inc()
                 except Exception as e:
                     return jsonify({'error': f'Failed to save rating: {str(e)}'}), 500
         
@@ -439,6 +507,7 @@ def api_remove_rating():
         return jsonify({'error': str(e)}), 500
 
 @app.route('/api/recommendations')
+@track_request_metrics
 def api_recommendations():
     """API endpoint to get user recommendations"""
     try:
@@ -446,6 +515,9 @@ def api_recommendations():
             return jsonify({'error': 'User not authenticated'}), 401
         
         user_id = session['user_id']
+        
+        # Update active users metric
+        ACTIVE_USERS.inc()
         
         # Get recommendations
         recommendations = get_recommendations_for_user(user_id, 12)
@@ -508,6 +580,15 @@ def api_rating_history():
                 movie_data = movies_df[movies_df['movie_id'] == movie_id]
                 if not movie_data.empty:
                     movie_info = movie_data.iloc[0].to_dict()
+                    
+                    # Clean NaN values
+                    import math
+                    for key, value in movie_info.items():
+                        if isinstance(value, float) and math.isnan(value):
+                            movie_info[key] = None
+                        elif isinstance(value, str) and value.lower() == 'nan':
+                            movie_info[key] = None
+                    
                     rating_history.append({
                         'movie_id': movie_id,
                         'rating': rating,
@@ -552,6 +633,16 @@ def api_movie_details():
         # Filter movies_df to get only the requested movie IDs
         if movies_df is not None:
             movie_details = movies_df[movies_df['movie_id'].isin(movie_ids)].to_dict('records')
+            
+            # Clean NaN values from the response
+            import math
+            for movie in movie_details:
+                for key, value in movie.items():
+                    if isinstance(value, float) and math.isnan(value):
+                        movie[key] = None
+                    elif isinstance(value, str) and value.lower() == 'nan':
+                        movie[key] = None
+            
             return jsonify(movie_details)
         else:
             return jsonify([])
