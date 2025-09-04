@@ -32,9 +32,15 @@ Movie recommendations are usually pretty terrible, and don't account for your pe
 
 1. Clone the repo
 2. Get a free TMDb API key from themoviedb.org
-3. Add your API key to the .env file
-4. Run `docker-compose up --build`
-5. Open http://localhost:3000
+3. Create a .env file in the project root directory:
+   ```bash
+   # Create .env file with your API keys:
+   echo "TMDB_API_KEY=your_api_key_here" > .env
+   echo "FLASK_SECRET_KEY=$(python3 -c 'import secrets; print(secrets.token_hex(32))')" >> .env
+   ```
+4. Add your API key to the .env file if you created the file manually
+5. Run `docker-compose up --build`
+6. Open http://localhost:3000
 
 **Access Points**:
 - Frontend: http://localhost:3000
