@@ -7,17 +7,18 @@ I created Cinemate because I was tired of spending hours scrolling through strea
 <img width="1287" height="610" alt="image" src="https://github.com/user-attachments/assets/2b48f464-4a92-4852-8f78-79e0d1470b03" />
 <img width="1437" height="325" alt="image" src="https://github.com/user-attachments/assets/ea9b91c1-0d60-455d-9036-33b8053c2d43" />
 
+
 ## The Problem
 
 Movie recommendations are usually pretty terrible, and don't account for your personal taste. Most streaming services just show you what's popular or what they want to promote. I wanted something that actually learned from my preferences and could find hidden gems I'd actually enjoy.
 
+
 ## How It Works
 
 **Content-Based Filtering**: The system analyzes movie content (genres, descriptions, titles) using TF-IDF vectorization to find movies similar to ones you've liked.
-
 **Collaborative Filtering**: It looks at other users with similar taste and recommends movies they enjoyed that you haven't seen yet.
-
 **Hybrid Approach**: I combined both methods - 60% content-based, 40% collaborative - which gives much better results than either alone.
+
 
 ## Key Features
 
@@ -27,6 +28,7 @@ Movie recommendations are usually pretty terrible, and don't account for your pe
 - **Real-time Learning**: Recommendations update instantly
 - **Production Monitoring**: Complete observability with Grafana dashboards and Prometheus metrics
 - **Docker Setup**: Easy deployment with docker-compose
+
 
 ## Getting Started
 
@@ -42,11 +44,13 @@ Movie recommendations are usually pretty terrible, and don't account for your pe
 5. Run `docker-compose up --build`
 6. Open http://localhost:3000
 
+
 **Access Points**:
 - Frontend: http://localhost:3000
 - Backend API: http://localhost:5000
 - Grafana Dashboard: http://localhost:3001 (admin/admin)
 - Prometheus Metrics: http://localhost:9090
+
 
 ## Tech Stack
 
@@ -72,6 +76,7 @@ Movie recommendations are usually pretty terrible, and don't account for your pe
 - Grafana for dashboards and visualization
 - Redis for caching and session storage
 - cAdvisor for container monitoring
+
 
 ## API Examples
 
@@ -117,6 +122,7 @@ curl -X GET http://localhost:5000/ratings \
   -H "Authorization: Api-Key YOUR_API_KEY"
 ```
 
+
 ## Prometheus Metrics
 
 The application exposes several metrics for monitoring:
@@ -146,11 +152,13 @@ curl "http://localhost:9090/api/v1/query?query=histogram_quantile(0.95, http_req
 curl "http://localhost:9090/api/v1/query?query=rate(cache_hits_total[5m]) / rate(cache_requests_total[5m])"
 ```
 
+
 ## What I Learned
 
 Building this taught me a lot about machine learning in practice. The biggest challenge was handling the "cold start" problem - new users with no ratings get poor recommendations until they rate enough movies. I solved this by implementing fallback mechanisms and using movie popularity as a starting point.
 
 I also learned that monitoring is crucial for ML applications. I added Prometheus and Grafana to track recommendation accuracy, API performance, and user engagement metrics.
+
 
 ## Current Limitations
 
